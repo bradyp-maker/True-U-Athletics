@@ -123,6 +123,95 @@ export default function Home() {
       </section>
 
       <CoachTeaser />
+
+      <section className="relative z-10 w-full max-w-4xl px-6 pb-28">
+        <div className="mx-auto mb-10 max-w-lg text-center">
+          <span className="rounded-full border border-white/10 bg-surface px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-accent">
+            Plans
+          </span>
+          <h2 className="mt-4 font-display text-3xl font-bold tracking-tight text-foreground">
+            Free to start. Unlock more when you&apos;re ready.
+          </h2>
+        </div>
+
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div className="rounded-3xl border border-white/10 bg-surface p-8">
+            <h3 className="font-display text-xl font-bold text-foreground">Free</h3>
+            <p className="mt-1 text-sm text-muted">Get started at no cost</p>
+            <div className="mt-6 flex items-baseline gap-1">
+              <span className="font-display text-4xl font-extrabold text-foreground">$0</span>
+            </div>
+            <ul className="mt-6 flex flex-col gap-3 text-sm text-muted">
+              {[
+                "1 full supplement stack, built around your training",
+                "Full ingredient breakdown and synergy notes",
+                "Save that stack to your account",
+                "3 free questions with Coach",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-2">
+                  <CheckIcon className="text-muted" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/survey"
+              className="mt-8 flex h-11 items-center justify-center rounded-full border border-white/15 px-6 text-sm font-bold text-foreground transition-colors hover:border-white/30 hover:bg-surface-2"
+            >
+              Take the Quiz
+            </Link>
+          </div>
+
+          <div className="relative rounded-3xl border border-accent/30 bg-surface p-8 shadow-[0_0_50px_-16px_rgba(198,255,63,0.35)]">
+            <span className="absolute -top-3 right-8 rounded-full bg-accent px-3 py-1 text-xs font-bold uppercase tracking-wide text-accent-foreground">
+              Most popular
+            </span>
+            <h3 className="font-display text-xl font-bold text-foreground">Coach</h3>
+            <p className="mt-1 text-sm text-muted">For athletes who want more</p>
+            <div className="mt-6 flex items-baseline gap-1">
+              <span className="font-display text-4xl font-extrabold text-foreground">$4.99</span>
+              <span className="text-sm font-medium text-muted">/ month</span>
+            </div>
+            <ul className="mt-6 flex flex-col gap-3 text-sm text-muted">
+              {[
+                "Generate up to 5 stacks a day",
+                "Save up to 5 stacks to your account",
+                "Unlimited access to Coach, your AI supplement coach",
+                "Ask about dosing, timing, and how your stack fits your training",
+                "Cancel anytime",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-2">
+                  <CheckIcon className="text-accent" />
+                  <span className="text-foreground">{item}</span>
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/coach"
+              className="mt-8 flex h-11 items-center justify-center rounded-full bg-accent px-6 text-sm font-bold text-accent-foreground transition-all duration-200 hover:scale-[1.03] hover:shadow-[0_0_24px_-6px_rgba(198,255,63,0.55)] active:scale-[0.98]"
+            >
+              Go unlimited with Coach
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
+  );
+}
+
+function CheckIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`mt-0.5 h-4 w-4 shrink-0 ${className}`}
+      aria-hidden="true"
+    >
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
   );
 }
