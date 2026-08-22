@@ -2,8 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 
 const STATS = [
-  { value: "2024", label: "NCAA First-Team All-American, high jump" },
-  { value: "2x", label: "AAC high jump champion, indoor & outdoor" },
+  { value: "8x", label: "All-Conference high jumper (2 golds, 6 silvers)" },
+  { value: "3x", label: "NCAA First-Team All-American, high jump" },
   { value: "7'3.75\"", label: "Personal-best high jump clearance" },
   { value: "2024", label: "U.S. Olympic Trials qualifier" },
 ];
@@ -48,32 +48,36 @@ export default function About() {
             <p>
               I&apos;m Brady Palen, and I grew up in Beloit, Kansas — a small
               town with no sports dietitian, no team nutritionist, and no
-              budget for either. As a high jumper, I was training a completely
-              different body and a completely different event than, say, the
-              lineman lifting next to me in the weight room. But the
-              supplement advice available to us was the same generic list for
-              everybody: whatever the label at the store told you to buy.
+              budget for either. As a high jumper, I was training for a
+              completely different body composition than, say, the lineman
+              lifting next to me in the weight room. It was obvious to me even
+              then: if the training is different, the nutrition advice around
+              it should be too.
             </p>
             <p>
-              I pieced together what I could on my own through college at
-              Wichita State, where I became a two-time conference high jump
-              champion and a 2024 NCAA First-Team All-American. Then I
-              transferred to USC for my final year of eligibility — a program
-              with one of the best sports nutrition staffs in the country. For
-              the first time, I had a real nutritionist looking at my training
-              load, my event, and my body, and building a plan around all
-              three.
+              I got valuable training and nutrition experience in college at
+              Wichita State and USC, where I became an 8-time All-Conference
+              high jumper (2 golds, 6 silvers) and a 3x NCAA First-Team
+              All-American. But looking back, my biggest regret is not taking
+              nutrition as seriously as I took training — mostly because the
+              right advice, tailored to what I was actually trying to
+              accomplish, was never easy to find.
             </p>
             <p>
-              That contrast is the reason True U Athletics exists. The gap
-              between what I had access to at a small Kansas high school and
-              what I had access to at USC has nothing to do with how hard an
-              athlete works — it&apos;s just resources. Club athletes, high
-              school teams, and amateurs training on their own shouldn&apos;t
-              have to guess. True U Athletics takes the same kind of
-              researched, sport-specific thinking I finally got access to at
-              USC and puts it in one place, built around your training — not
-              a one-size-fits-all list.
+              That&apos;s the reason True U Athletics exists. The gap between
+              what I had access to at a small Kansas high school and what I
+              had access to at USC had nothing to do with how hard I worked —
+              it was purely a matter of resources. Club athletes, high school
+              teams, and amateurs training on their own shouldn&apos;t have to
+              guess. True U Athletics takes that same researched,
+              sport-specific thinking and puts it in one place, built around
+              your training — not a one-size-fits-all list.
+            </p>
+            <p>
+              And that&apos;s also why we don&apos;t operate like influencers
+              do. Influencers don&apos;t know what supplements match your
+              training goals — they know what pays them a commission. True U
+              Athletics is built on the opposite premise.
             </p>
           </div>
         </div>
