@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Sora } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
 import SiteHeader from "@/components/SiteHeader";
 import "./globals.css";
 
@@ -26,8 +27,21 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${inter.variable} ${sora.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">
-        <SiteHeader />
-        {children}
+        <ClerkProvider
+          appearance={{
+            variables: {
+              colorPrimary: "#c6ff3f",
+              colorPrimaryForeground: "#0a0a0b",
+              colorBackground: "#131316",
+              colorForeground: "#f5f5f7",
+              colorInput: "#1c1c21",
+              colorInputForeground: "#f5f5f7",
+            },
+          }}
+        >
+          <SiteHeader />
+          {children}
+        </ClerkProvider>
       </body>
     </html>
   );
