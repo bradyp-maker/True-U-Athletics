@@ -1,6 +1,6 @@
 export const MULTI_SELECT = {
   q1_focus: {
-    label: "Training focus",
+    label: "What's your training focus?",
     options: [
       "strength",
       "bodybuilding",
@@ -12,7 +12,7 @@ export const MULTI_SELECT = {
     ],
   },
   q2_goals: {
-    label: "Training goals",
+    label: "What are your training goals?",
     options: [
       "build_muscle",
       "lose_fat",
@@ -23,11 +23,11 @@ export const MULTI_SELECT = {
     ],
   },
   q8_allergies: {
-    label: "Allergies / sensitivities",
+    label: "Do you have any allergies or sensitivities?",
     options: ["dairy", "soy", "gluten", "shellfish", "caffeine_sens", "none"],
   },
   q11_current: {
-    label: "Currently taking",
+    label: "What are you currently taking?",
     options: [
       "protein",
       "creatine",
@@ -48,16 +48,25 @@ export const MULTI_SELECT = {
 } as const;
 
 export const SINGLE_SELECT = {
-  q3_frequency: { label: "Training frequency", options: ["1-2x", "3-4x", "5x+", "none"] },
-  q4_tested: { label: "Drug tested?", options: ["yes", "no"] },
-  q5_sex: { label: "Biological sex", options: ["male", "female", "na"] },
-  q6_age: { label: "Age range", options: ["under18", "18-25", "26-35", "36-50", "50+"] },
+  q3_frequency: { label: "How often do you train?", options: ["1-2x", "3-4x", "5x+", "none"] },
+  q4_tested: { label: "Are you drug tested?", options: ["yes", "no"] },
+  q5_sex: { label: "What's your biological sex?", options: ["male", "female", "na"] },
+  q6_age: {
+    label: "What's your age range?",
+    options: ["under18", "18-25", "26-35", "36-50", "50+"],
+  },
   q7_diet: {
-    label: "Diet restriction",
+    label: "Do you follow any diet restrictions?",
     options: ["vegan", "vegetarian", "keto", "none", "gluten_free", "other"],
   },
-  q9_meds: { label: "Meds / conditions?", options: ["yes", "no"] },
-  q10_sleep: { label: "Sleep quality", options: ["low", "low_quality", "good", "high"] },
+  q9_meds: {
+    label: "Are you taking any medications or managing any conditions?",
+    options: ["yes", "no"],
+  },
+  q10_sleep: {
+    label: "How would you rate your sleep quality?",
+    options: ["low", "low_quality", "good", "high"],
+  },
 } as const;
 
 export type TrainingFocus = (typeof MULTI_SELECT.q1_focus.options)[number];
