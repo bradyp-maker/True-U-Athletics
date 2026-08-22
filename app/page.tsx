@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CoachTeaser } from "@/components/CoachTeaser";
 
 const FEATURES = [
   {
@@ -121,40 +122,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="relative z-10 w-full max-w-5xl px-6 pb-28">
-        <div className="flex flex-col items-center gap-8 rounded-3xl border border-white/10 bg-surface p-8 sm:flex-row sm:justify-between sm:p-12">
-          <div className="text-center sm:text-left">
-            <span className="rounded-full border border-white/10 bg-surface-2 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-accent">
-              Go further with Coach
-            </span>
-            <h2 className="mt-4 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              Unlimited stacks, plus an AI coach in your corner
-            </h2>
-            <p className="mt-3 max-w-md text-base leading-7 text-muted">
-              Upgrade to unlock every stack you generate and Coach — an AI trained on sport-specific
-              supplement science, ready to answer dosing and timing questions any time.
-            </p>
-            <ul className="mt-5 flex flex-col gap-2 text-sm text-muted sm:items-start">
-              <li>Unlimited stacks, always full results</li>
-              <li>Ask Coach anything about your supplement stack</li>
-              <li>Cancel anytime</li>
-            </ul>
-          </div>
-
-          <div className="flex shrink-0 flex-col items-center gap-4 text-center">
-            <div className="flex items-baseline gap-1">
-              <span className="font-display text-4xl font-extrabold text-foreground">$4.99</span>
-              <span className="text-sm font-medium text-muted">/ month</span>
-            </div>
-            <Link
-              href="/coach"
-              className="flex h-12 items-center justify-center rounded-full bg-accent px-8 text-base font-bold text-accent-foreground transition-all duration-200 hover:scale-[1.04] hover:shadow-[0_0_28px_-4px_rgba(198,255,63,0.6)] active:scale-[0.97]"
-            >
-              Meet Coach
-            </Link>
-          </div>
-        </div>
-      </section>
+      <CoachTeaser />
     </div>
   );
 }
