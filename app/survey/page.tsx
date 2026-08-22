@@ -95,6 +95,97 @@ function optionLabel(value: string): string {
   return LABELS[value] ?? value;
 }
 
+const DESCRIPTIONS: Record<string, string> = {
+  // q1 training focus
+  strength: "Heavy lifting, powerlifting focus",
+  bodybuilding: "Building muscle size and definition",
+  endurance: "Long-duration cardio training",
+  team_sports: "Field or court based sports",
+  crossfit: "Mixed functional fitness training",
+  combat: "Striking, grappling, or fighting sports",
+  general_wellness: "Staying active and healthy",
+  // q2 goals
+  build_muscle: "Gain lean muscle mass",
+  lose_fat: "Reduce body fat percentage",
+  increase_strength: "Lift heavier weights",
+  improve_endurance: "Go longer without fatigue",
+  improve_recovery: "Bounce back faster between sessions",
+  general_health: "Overall wellbeing, not performance",
+  // q3 frequency
+  "1-2x": "A couple sessions per week",
+  "3-4x": "Several sessions per week",
+  "5x+": "Training nearly every day",
+  // q5 sex
+  male: "Biologically male",
+  female: "Biologically female",
+  na: "Would rather skip this",
+  // q6 age
+  under18: "Younger than 18 years old",
+  "18-25": "Young adult range",
+  "26-35": "Adult range",
+  "36-50": "Middle-aged range",
+  "50+": "Older adult range",
+  // q7 diet
+  vegan: "No animal products at all",
+  vegetarian: "No meat, dairy and eggs okay",
+  keto: "Very low carb, high fat",
+  gluten_free: "No wheat or gluten",
+  other: "Some other dietary restriction",
+  // q8 allergies
+  dairy: "Milk-based products bother you",
+  soy: "Soy-based products bother you",
+  gluten: "Wheat-based products bother you",
+  shellfish: "Shellfish-derived ingredients bother you",
+  caffeine_sens: "Sensitive to stimulants",
+  // q10 sleep
+  low: "Poor, frequently disrupted sleep",
+  low_quality: "Sleep, but wake up often",
+  good: "Solid, consistent sleep",
+  high: "Excellent, restorative sleep",
+  // shared / q11 / ingredients
+  none: "Not applicable to me",
+  protein: "Whey-based protein powder",
+  protein_plant: "Plant-based protein powder",
+  creatine: "Boosts strength and power output",
+  caffeine: "Boosts energy and focus",
+  electrolytes: "Replaces minerals lost through sweat",
+  omega3: "Fish oil for heart and joints",
+  omega3_algae: "Plant-based omega-3 source",
+  multivitamin: "Fills common nutrient gaps",
+  vitamin_d: "Supports bone and immune health",
+  magnesium: "Supports recovery and better sleep",
+  joint_support: "Supports joint health and mobility",
+  ashwagandha: "Helps manage stress levels",
+  melatonin: "Helps you fall asleep faster",
+  iron: "Supports oxygen transport in blood",
+  b12: "Supports energy metabolism",
+  citrulline: "Boosts blood flow and pumps",
+  beta_alanine: "Delays muscular fatigue",
+  carb_fuel: "Fuels long training sessions",
+  beetroot: "Boosts blood flow and endurance",
+  fiber: "Supports digestion and fullness",
+  tart_cherry: "Reduces soreness and inflammation",
+  b_complex: "Supports energy and metabolism",
+  glucosamine: "Supports joint cartilage health",
+  soy_protein: "Soy-based protein powder",
+  oat_based: "Oat-based carbohydrate source",
+  calcium: "Supports bone strength",
+  glycine: "Supports deeper sleep quality",
+};
+
+const QUESTION_OPTION_DESCRIPTIONS: Record<string, string> = {
+  "q4_tested:yes": "Subject to routine drug testing",
+  "q4_tested:no": "Not tested for banned substances",
+  "q9_meds:yes": "Taking medication or managing a condition",
+  "q9_meds:no": "No medications or conditions to flag",
+};
+
+function optionDescription(questionKey: string, value: string): string {
+  return (
+    QUESTION_OPTION_DESCRIPTIONS[`${questionKey}:${value}`] ?? DESCRIPTIONS[value] ?? ""
+  );
+}
+
 const QUESTIONS: {
   key: keyof Answers;
   kind: "multi" | "single";
@@ -204,6 +295,7 @@ export default function SurveyPage() {
                 ? Array.isArray(answers[question.key]) &&
                   (answers[question.key] as string[]).includes(opt)
                 : answers[question.key] === opt;
+            const description = optionDescription(question.key, opt);
             return (
               <button
                 key={opt}
@@ -213,13 +305,24 @@ export default function SurveyPage() {
                     ? toggleOption(question.key, opt)
                     : selectSingle(question.key, opt)
                 }
-                className={`flex items-center justify-between rounded-xl border px-5 py-3 text-left text-base transition-colors ${
+                className={`flex flex-col items-start justify-center rounded-xl border px-5 py-3 text-left text-base transition-colors ${
                   selected
                     ? "border-foreground bg-foreground text-background"
                     : "border-black/[.08] bg-white text-black hover:border-black/[.2] dark:border-white/[.145] dark:bg-zinc-900 dark:text-zinc-50 dark:hover:border-white/[.3]"
                 }`}
               >
-                {optionLabel(opt)}
+                <span>{optionLabel(opt)}</span>
+                {description && (
+                  <span
+                    className={`text-sm ${
+                      selected
+                        ? "text-background/70"
+                        : "text-zinc-500 dark:text-zinc-400"
+                    }`}
+                  >
+                    {description}
+                  </span>
+                )}
               </button>
             );
           })}
