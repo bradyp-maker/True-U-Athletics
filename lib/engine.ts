@@ -118,13 +118,40 @@ export type Ingredient =
 
 export type Gate = "UNDER_18_BLOCK" | "certified_only" | "full_catalog";
 
+export type ReasonMap = Partial<Record<Ingredient, string[]>>;
+
 export interface EngineResult {
   gate: Gate;
   stack: Set<Ingredient>;
   toRecommend?: Set<Ingredient>;
   alreadyCovered?: Set<Ingredient>;
   notes: string[];
+  reasons: ReasonMap;
 }
+
+function addReason(reasons: ReasonMap, ing: Ingredient, reason: string) {
+  const list = reasons[ing] ?? (reasons[ing] = []);
+  if (!list.includes(reason)) list.push(reason);
+}
+
+const FOCUS_REASON: Record<TrainingFocus, string> = {
+  strength: "You're training for strength and explosiveness",
+  bodybuilding: "You're training for bodybuilding",
+  endurance: "You're training for endurance",
+  team_sports: "You play team sports",
+  crossfit: "You do CrossFit / mixed conditioning",
+  combat: "You train in combat sports",
+  general_wellness: "You're focused on general wellness",
+};
+
+const GOAL_REASON: Record<TrainingGoal, string> = {
+  build_muscle: "Your goal is to build muscle",
+  lose_fat: "Your goal is to lose fat",
+  increase_strength: "Your goal is to increase strength and explosiveness",
+  improve_endurance: "Your goal is to improve endurance",
+  improve_recovery: "Your goal is to improve recovery",
+  general_health: "Your goal is general health",
+};
 
 const Q1_RULES: Record<TrainingFocus, Ingredient[]> = {
   strength: ["creatine", "citrulline", "beta_alanine", "caffeine"],
@@ -164,20 +191,31 @@ const WELLNESS_WHITELIST: Set<Ingredient> = new Set([
 ]);
 const STACKING_CONCERN: Set<Ingredient> = new Set(["caffeine", "melatonin", "iron", "creatine"]);
 
-function applyQ3(stack: Set<Ingredient>, freq: TrainingFrequency): Set<Ingredient> {
+function applyQ3(
+  stack: Set<Ingredient>,
+  freq: TrainingFrequency,
+  reasons: ReasonMap
+): Set<Ingredient> {
   if (freq === "3-4x") {
     stack.add("magnesium");
+    addReason(reasons, "magnesium", "You train 3–4x per week");
     stack.add("omega3");
+    addReason(reasons, "omega3", "You train 3–4x per week");
   } else if (freq === "5x+") {
     stack.add("joint_support");
+    addReason(reasons, "joint_support", "You train 5x+ per week");
     stack.add("electrolytes");
+    addReason(reasons, "electrolytes", "You train 5x+ per week");
   } else if (freq === "none") {
     (["creatine", "beta_alanine", "caffeine", "citrulline"] as Ingredient[]).forEach((i) =>
       stack.delete(i)
     );
     stack.add("multivitamin");
+    addReason(reasons, "multivitamin", "You're not currently training regularly");
     stack.add("vitamin_d");
+    addReason(reasons, "vitamin_d", "You're not currently training regularly");
     stack.add("omega3");
+    addReason(reasons, "omega3", "You're not currently training regularly");
   }
   return stack;
 }
@@ -197,17 +235,23 @@ function applyQ6(age: AgeRange): Set<Ingredient> | null {
 function applyQ7(
   stack: Set<Ingredient>,
   diet: DietRestriction,
-  notes: string[]
+  notes: string[],
+  reasons: ReasonMap
 ): Set<Ingredient> {
   if (diet === "vegan") {
     stack.delete("protein");
     stack.add("protein_plant");
+    addReason(reasons, "protein_plant", "You follow a vegan diet");
     stack.add("b12");
+    addReason(reasons, "b12", "You follow a vegan diet");
     stack.add("iron");
+    addReason(reasons, "iron", "You follow a vegan diet");
     stack.add("creatine");
+    addReason(reasons, "creatine", "You follow a vegan diet (naturally lower baseline creatine intake)");
     if (stack.has("omega3")) {
       stack.delete("omega3");
       stack.add("omega3_algae");
+      addReason(reasons, "omega3_algae", "Plant-based swap for omega-3 due to your vegan diet");
     }
     notes.push("vegan: hard filter applied (plant protein, algae omega-3)");
   } else if (diet === "vegetarian") {
@@ -234,48 +278,100 @@ function applyQ8(stack: Set<Ingredient>, allergies: Allergy[], notes: string[]):
   return stack;
 }
 
-function applyQ9(stack: Set<Ingredient>, meds: MedsCondition, notes: string[]): Set<Ingredient> {
+function applyQ9(
+  stack: Set<Ingredient>,
+  meds: MedsCondition,
+  notes: string[],
+  reasons: ReasonMap
+): Set<Ingredient> {
   if (meds === "yes") {
     notes.push("meds/conditions flagged: soft-gated to wellness-only + consult physician");
     const kept = [...stack].filter((i) => WELLNESS_WHITELIST.has(i));
+    WELLNESS_BASELINE.forEach((i) =>
+      addReason(
+        reasons,
+        i,
+        "Added as a safety baseline since you flagged medications or a medical condition"
+      )
+    );
     return new Set([...kept, ...WELLNESS_BASELINE]);
   }
   return stack;
 }
 
-function applyQ10(stack: Set<Ingredient>, sleep: SleepQuality): Set<Ingredient> {
+function applyQ10(
+  stack: Set<Ingredient>,
+  sleep: SleepQuality,
+  reasons: ReasonMap
+): Set<Ingredient> {
   if (sleep === "low") {
-    (["magnesium", "melatonin", "ashwagandha", "glycine"] as Ingredient[]).forEach((i) =>
-      stack.add(i)
-    );
+    (["magnesium", "melatonin", "ashwagandha", "glycine"] as Ingredient[]).forEach((i) => {
+      stack.add(i);
+      addReason(reasons, i, "You reported low sleep quality");
+    });
   } else if (sleep === "low_quality") {
-    (["magnesium", "ashwagandha"] as Ingredient[]).forEach((i) => stack.add(i));
+    (["magnesium", "ashwagandha"] as Ingredient[]).forEach((i) => {
+      stack.add(i);
+      addReason(reasons, i, "You reported frequent waking during sleep");
+    });
   }
   return stack;
 }
 
 export function buildStack(answers: Answers): EngineResult {
   const notes: string[] = [];
+  const reasons: ReasonMap = {};
   const ageResult = applyQ6(answers.q6_age);
   if (ageResult === null) {
-    return { gate: "UNDER_18_BLOCK", stack: new Set(), notes: ["blocked: refer to parent/doctor"] };
+    return {
+      gate: "UNDER_18_BLOCK",
+      stack: new Set(),
+      notes: ["blocked: refer to parent/doctor"],
+      reasons: {},
+    };
   }
 
   let stack: Set<Ingredient> = new Set();
-  answers.q1_focus.forEach((f) => Q1_RULES[f].forEach((i) => stack.add(i)));
-  answers.q2_goals.forEach((g) => Q2_RULES[g].forEach((i) => stack.add(i)));
-  stack = applyQ3(stack, answers.q3_frequency);
-  ageResult.forEach((i) => stack.add(i));
-  stack = applyQ7(stack, answers.q7_diet, notes);
+  answers.q1_focus.forEach((f) =>
+    Q1_RULES[f].forEach((i) => {
+      stack.add(i);
+      addReason(reasons, i, FOCUS_REASON[f]);
+    })
+  );
+  answers.q2_goals.forEach((g) =>
+    Q2_RULES[g].forEach((i) => {
+      stack.add(i);
+      addReason(reasons, i, GOAL_REASON[g]);
+    })
+  );
+  stack = applyQ3(stack, answers.q3_frequency, reasons);
+  ageResult.forEach((i) => {
+    stack.add(i);
+    addReason(
+      reasons,
+      i,
+      answers.q6_age === "50+"
+        ? "Added to support bone and muscle health for your age range"
+        : "Added to support joint health for your age range"
+    );
+  });
+  stack = applyQ7(stack, answers.q7_diet, notes, reasons);
   stack = applyQ8(stack, answers.q8_allergies, notes);
-  stack = applyQ9(stack, answers.q9_meds, notes);
-  stack = applyQ10(stack, answers.q10_sleep);
+  stack = applyQ9(stack, answers.q9_meds, notes, reasons);
+  stack = applyQ10(stack, answers.q10_sleep, reasons);
   const catalogGate: Gate = answers.q4_tested === "yes" ? "certified_only" : "full_catalog";
 
   if (stack.size === 0) {
     stack = new Set(WELLNESS_BASELINE);
+    WELLNESS_BASELINE.forEach((i) =>
+      addReason(reasons, i, "Added as a safety-net wellness baseline")
+    );
     notes.push("safety net: stack was empty after all rules, added wellness baseline");
   }
+
+  Object.keys(reasons).forEach((key) => {
+    if (!stack.has(key as Ingredient)) delete reasons[key as Ingredient];
+  });
 
   const current: Set<Ingredient> = new Set(
     answers.q11_current.filter((i): i is Exclude<CurrentSupplement, "none"> => i !== "none")
@@ -289,5 +385,5 @@ export function buildStack(answers: Answers): EngineResult {
     )
   );
 
-  return { gate: catalogGate, stack, toRecommend, alreadyCovered, notes };
+  return { gate: catalogGate, stack, toRecommend, alreadyCovered, notes, reasons };
 }

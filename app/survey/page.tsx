@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   MULTI_SELECT,
@@ -8,11 +8,12 @@ import {
   buildStack,
   type Answers,
   type EngineResult,
+  type Ingredient,
 } from "@/lib/engine";
 
 const LABELS: Record<string, string> = {
   // q1 training focus
-  strength: "Strength",
+  strength: "Strength and explosiveness",
   bodybuilding: "Bodybuilding",
   endurance: "Endurance",
   team_sports: "Team sports",
@@ -22,7 +23,7 @@ const LABELS: Record<string, string> = {
   // q2 goals
   build_muscle: "Build muscle",
   lose_fat: "Lose fat",
-  increase_strength: "Increase strength",
+  increase_strength: "Increase strength and explosiveness",
   improve_endurance: "Improve endurance",
   improve_recovery: "Improve recovery",
   general_health: "General health",
@@ -97,7 +98,7 @@ function optionLabel(value: string): string {
 
 const DESCRIPTIONS: Record<string, string> = {
   // q1 training focus
-  strength: "Heavy lifting, powerlifting focus",
+  strength: "Heavy lifting and powerful, explosive movements",
   bodybuilding: "Building muscle size and definition",
   endurance: "Long-duration cardio training",
   team_sports: "Field or court based sports",
@@ -107,7 +108,7 @@ const DESCRIPTIONS: Record<string, string> = {
   // q2 goals
   build_muscle: "Gain lean muscle mass",
   lose_fat: "Reduce body fat percentage",
-  increase_strength: "Lift heavier weights",
+  increase_strength: "Lift heavier and move weight faster",
   improve_endurance: "Go longer without fatigue",
   improve_recovery: "Bounce back faster between sessions",
   general_health: "Overall wellbeing, not performance",
@@ -186,6 +187,8 @@ function optionDescription(questionKey: string, value: string): string {
   );
 }
 
+const Q11_POPULAR = ["protein", "creatine", "multivitamin", "caffeine"];
+
 const QUESTIONS: {
   key: keyof Answers;
   kind: "multi" | "single";
@@ -218,9 +221,14 @@ export default function SurveyPage() {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<DraftAnswers>(INITIAL_ANSWERS);
   const [result, setResult] = useState<EngineResult | null>(null);
+  const [otherMenuOpen, setOtherMenuOpen] = useState(false);
 
   const question = QUESTIONS[step];
   const isLastStep = step === QUESTIONS.length - 1;
+
+  useEffect(() => {
+    setOtherMenuOpen(false);
+  }, [step]);
 
   function toggleOption(key: keyof Answers, value: string) {
     setAnswers((prev) => {
@@ -261,6 +269,23 @@ export default function SurveyPage() {
     setStep((s) => Math.max(0, s - 1));
   }
 
+  const AUTO_ADVANCE_ON_NONE = new Set(["q7_diet", "q8_allergies"]);
+
+  function handleOptionClick(opt: string, wasSelected: boolean) {
+    if (question.kind === "multi") {
+      toggleOption(question.key, opt);
+    } else {
+      selectSingle(question.key, opt);
+    }
+    if (
+      opt === "none" &&
+      !wasSelected &&
+      AUTO_ADVANCE_ON_NONE.has(question.key)
+    ) {
+      setStep((s) => Math.min(s + 1, QUESTIONS.length - 1));
+    }
+  }
+
   function handleRestart() {
     setAnswers(INITIAL_ANSWERS);
     setStep(0);
@@ -289,7 +314,10 @@ export default function SurveyPage() {
         </h1>
 
         <div className="mb-10 flex flex-col gap-3">
-          {question.options.map((opt) => {
+          {(question.key === "q11_current"
+            ? [...Q11_POPULAR, "none"]
+            : question.options
+          ).map((opt) => {
             const selected =
               question.kind === "multi"
                 ? Array.isArray(answers[question.key]) &&
@@ -300,11 +328,7 @@ export default function SurveyPage() {
               <button
                 key={opt}
                 type="button"
-                onClick={() =>
-                  question.kind === "multi"
-                    ? toggleOption(question.key, opt)
-                    : selectSingle(question.key, opt)
-                }
+                onClick={() => handleOptionClick(opt, selected)}
                 className={`flex flex-col items-start justify-center rounded-xl border px-5 py-3 text-left text-base transition-colors ${
                   selected
                     ? "border-foreground bg-foreground text-background"
@@ -326,6 +350,76 @@ export default function SurveyPage() {
               </button>
             );
           })}
+
+          {question.key === "q11_current" &&
+            (() => {
+              const otherOptions = question.options.filter(
+                (o) => o !== "none" && !Q11_POPULAR.includes(o)
+              );
+              const currentSelections = Array.isArray(
+                answers[question.key]
+              )
+                ? (answers[question.key] as string[])
+                : [];
+              const otherSelectedCount = otherOptions.filter((o) =>
+                currentSelections.includes(o)
+              ).length;
+              return (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setOtherMenuOpen((v) => !v)}
+                    className="flex w-full items-center justify-between rounded-xl border border-dashed border-black/[.15] bg-white px-5 py-3 text-left text-base text-black transition-colors hover:border-black/[.3] dark:border-white/[.2] dark:bg-zinc-900 dark:text-zinc-50 dark:hover:border-white/[.35]"
+                  >
+                    <span>Other supplements</span>
+                    <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                      {otherSelectedCount > 0
+                        ? `${otherSelectedCount} selected`
+                        : "Show more"}
+                    </span>
+                  </button>
+                  {otherMenuOpen && (
+                    <div className="mt-3 flex flex-col gap-2 rounded-xl border border-black/[.08] bg-white p-3 dark:border-white/[.145] dark:bg-zinc-900">
+                      {otherOptions.map((opt) => {
+                        const selected = currentSelections.includes(opt);
+                        const description = optionDescription(
+                          question.key,
+                          opt
+                        );
+                        return (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => toggleOption(question.key, opt)}
+                            className={`flex items-center justify-between rounded-lg border px-4 py-2.5 text-left text-sm transition-colors ${
+                              selected
+                                ? "border-foreground bg-foreground text-background"
+                                : "border-black/[.08] bg-white text-black hover:border-black/[.2] dark:border-white/[.145] dark:bg-zinc-900 dark:text-zinc-50 dark:hover:border-white/[.3]"
+                            }`}
+                          >
+                            <span className="flex flex-col items-start">
+                              <span>{optionLabel(opt)}</span>
+                              {description && (
+                                <span
+                                  className={`text-xs ${
+                                    selected
+                                      ? "text-background/70"
+                                      : "text-zinc-500 dark:text-zinc-400"
+                                  }`}
+                                >
+                                  {description}
+                                </span>
+                              )}
+                            </span>
+                            {selected && <span>✓</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
         </div>
 
         <div className="flex items-center justify-between">
@@ -350,6 +444,157 @@ export default function SurveyPage() {
     </div>
   );
 }
+
+const INGREDIENT_INFO: Record<
+  Ingredient,
+  { whatItIs: string; howItWorks: string; whatItDoes: string }
+> = {
+  creatine: {
+    whatItIs: "A naturally occurring compound stored in muscle as phosphocreatine.",
+    howItWorks:
+      "Replenishes ATP, your muscles' immediate energy source, during short bursts of effort.",
+    whatItDoes: "Increases strength, power output, and high-intensity training capacity.",
+  },
+  citrulline: {
+    whatItIs: "A non-essential amino acid, also known as citrulline malate in supplement form.",
+    howItWorks: "Converts to arginine in the body, raising nitric oxide and widening blood vessels.",
+    whatItDoes: "Improves blood flow and muscle pumps, and may reduce training fatigue.",
+  },
+  beta_alanine: {
+    whatItIs: "An amino acid that combines with histidine to form carnosine in muscle tissue.",
+    howItWorks: "Buffers acid buildup in muscles during repeated high-intensity efforts.",
+    whatItDoes: "Delays muscular fatigue in sets and sprints lasting one to four minutes.",
+  },
+  caffeine: {
+    whatItIs: "A central nervous system stimulant found in coffee, tea, and pre-workout formulas.",
+    howItWorks: "Blocks adenosine receptors in the brain, reducing perceived fatigue and effort.",
+    whatItDoes: "Boosts alertness, focus, and power output during training.",
+  },
+  protein: {
+    whatItIs: "A whey-based protein powder, a fast-digesting complete protein from milk.",
+    howItWorks: "Supplies essential amino acids that trigger muscle protein synthesis.",
+    whatItDoes: "Helps repair and build muscle tissue after training.",
+  },
+  protein_plant: {
+    whatItIs:
+      "A plant-based protein blend, often pea, rice, or soy, used as a dairy-free protein source.",
+    howItWorks: "Provides a complete or complementary amino acid profile to support muscle repair.",
+    whatItDoes: "Supports muscle recovery and growth without animal-derived ingredients.",
+  },
+  electrolytes: {
+    whatItIs: "A blend of minerals, typically sodium, potassium, and magnesium.",
+    howItWorks:
+      "Replaces minerals lost in sweat and helps maintain fluid balance and nerve/muscle signaling.",
+    whatItDoes: "Reduces cramping risk and supports hydration during long or hot sessions.",
+  },
+  carb_fuel: {
+    whatItIs: "A fast-digesting carbohydrate source, often maltodextrin or cluster dextrin.",
+    howItWorks: "Tops up muscle and liver glycogen stores that fuel sustained effort.",
+    whatItDoes: "Delays fatigue and maintains energy during long training sessions.",
+  },
+  beetroot: {
+    whatItIs: "A concentrated extract from beetroot, naturally rich in dietary nitrates.",
+    howItWorks: "Nitrates convert to nitric oxide, which relaxes and widens blood vessels.",
+    whatItDoes: "Improves blood flow and oxygen efficiency, boosting endurance performance.",
+  },
+  joint_support: {
+    whatItIs:
+      "A blend built around glucosamine, chondroitin, or similar cartilage-supporting compounds.",
+    howItWorks: "Supplies raw materials your body uses to maintain cartilage and joint fluid.",
+    whatItDoes: "Supports joint comfort and mobility under repeated training stress.",
+  },
+  omega3: {
+    whatItIs: "Fish oil supplying EPA and DHA, the primary omega-3 fatty acids.",
+    howItWorks: "Incorporates into cell membranes and lowers production of inflammatory compounds.",
+    whatItDoes:
+      "Supports heart, brain, and joint health, and helps manage exercise-induced inflammation.",
+  },
+  omega3_algae: {
+    whatItIs: "An algae-derived source of EPA and DHA, a plant-based alternative to fish oil.",
+    howItWorks:
+      "Works the same way as fish oil, since algae is the original source fish get their omega-3s from.",
+    whatItDoes: "Supports heart, brain, and joint health without animal-derived ingredients.",
+  },
+  magnesium: {
+    whatItIs: "An essential mineral involved in hundreds of enzymatic reactions in the body.",
+    howItWorks:
+      "Regulates muscle contraction and relaxation, nerve function, and the body's stress response.",
+    whatItDoes: "Supports muscle recovery, sleep quality, and reduces cramping risk.",
+  },
+  ashwagandha: {
+    whatItIs: "An adaptogenic herb used in traditional medicine for centuries.",
+    howItWorks: "May help regulate cortisol, the body's primary stress hormone.",
+    whatItDoes: "Helps manage stress and may support recovery, sleep, and steady energy levels.",
+  },
+  multivitamin: {
+    whatItIs: "A broad-spectrum blend of essential vitamins and minerals.",
+    howItWorks: "Fills small, common gaps between what your diet provides and what your body needs.",
+    whatItDoes: "Supports overall health as a nutritional safety net.",
+  },
+  vitamin_d: {
+    whatItIs: "A fat-soluble vitamin the body also produces from sun exposure.",
+    howItWorks: "Regulates calcium absorption and supports immune and hormone signaling.",
+    whatItDoes: "Supports bone density, immune function, and healthy hormone levels.",
+  },
+  fiber: {
+    whatItIs: "A non-digestible carbohydrate from plant sources or purified supplement form.",
+    howItWorks: "Adds bulk to digestion, feeds gut bacteria, and slows nutrient absorption.",
+    whatItDoes: "Supports digestion, fullness, and steady blood sugar, useful during fat loss.",
+  },
+  tart_cherry: {
+    whatItIs: "A concentrated extract from Montmorency tart cherries.",
+    howItWorks:
+      "Provides natural antioxidants and anti-inflammatory compounds, and supports natural melatonin production.",
+    whatItDoes: "May reduce muscle soreness and support recovery after hard training.",
+  },
+  b_complex: {
+    whatItIs: "A blend of all eight B vitamins (B1, B2, B3, B5, B6, B7, B9, B12).",
+    howItWorks: "Acts as a cofactor in the metabolic pathways that turn food into usable energy.",
+    whatItDoes: "Supports energy metabolism and nervous system function.",
+  },
+  glucosamine: {
+    whatItIs: "A natural compound found in cartilage, taken here as a standalone supplement.",
+    howItWorks: "Supplies a building block your body uses to maintain and repair cartilage.",
+    whatItDoes: "Supports joint cartilage health, especially under repetitive training stress.",
+  },
+  soy_protein: {
+    whatItIs: "A complete plant-based protein isolated from soybeans.",
+    howItWorks: "Supplies a full essential amino acid profile that supports muscle protein synthesis.",
+    whatItDoes: "Supports muscle repair and growth as a dairy-free protein source.",
+  },
+  oat_based: {
+    whatItIs: "A carbohydrate source made from oats, often blended into recovery or fueling products.",
+    howItWorks: "Provides slow-digesting starches and fiber for sustained energy release.",
+    whatItDoes: "Fuels training and refuels glycogen without a fast blood sugar spike.",
+  },
+  b12: {
+    whatItIs: "Vitamin B12 (cobalamin), a nutrient found almost exclusively in animal products.",
+    howItWorks: "Supports red blood cell formation and nerve cell maintenance.",
+    whatItDoes:
+      "Supports energy metabolism, especially important if you eat little or no animal products.",
+  },
+  iron: {
+    whatItIs: "An essential mineral central to the structure of hemoglobin.",
+    howItWorks: "Carries oxygen from your lungs to your muscles via red blood cells.",
+    whatItDoes: "Supports oxygen delivery and helps prevent fatigue linked to low iron stores.",
+  },
+  calcium: {
+    whatItIs: "The most abundant mineral in the body, mostly stored in bones and teeth.",
+    howItWorks: "Provides structural material for bone and enables muscle contraction and nerve signaling.",
+    whatItDoes: "Supports bone density and strength, especially important as you age.",
+  },
+  melatonin: {
+    whatItIs: "A hormone your body naturally produces in response to darkness.",
+    howItWorks: "Signals your brain that it's time to wind down and shifts your internal body clock.",
+    whatItDoes: "Helps you fall asleep faster, especially useful when sleep is disrupted.",
+  },
+  glycine: {
+    whatItIs: "A simple, non-essential amino acid found throughout the body's proteins.",
+    howItWorks:
+      "May lower core body temperature slightly and support neurotransmitter activity linked to calm.",
+    whatItDoes: "Supports deeper, more restorative sleep quality.",
+  },
+};
 
 function ResultsView({
   result,
@@ -392,6 +637,64 @@ function ResultsView({
 
   const toRecommend = [...(result.toRecommend ?? [])];
   const alreadyCovered = [...(result.alreadyCovered ?? [])];
+  const reasons = result.reasons;
+
+  const rankedToRecommend = [...toRecommend].sort(
+    (a, b) => (reasons[b]?.length ?? 0) - (reasons[a]?.length ?? 0)
+  );
+  const essential = rankedToRecommend.slice(0, 3);
+  const otherOptions = rankedToRecommend.slice(3);
+
+  return (
+    <ResultsViewInner
+      result={result}
+      onRestart={onRestart}
+      essential={essential}
+      otherOptions={otherOptions}
+      alreadyCovered={alreadyCovered}
+      reasons={reasons}
+    />
+  );
+}
+
+function ResultsViewInner({
+  result,
+  onRestart,
+  essential,
+  otherOptions,
+  alreadyCovered,
+  reasons,
+}: {
+  result: EngineResult;
+  onRestart: () => void;
+  essential: Ingredient[];
+  otherOptions: Ingredient[];
+  alreadyCovered: Ingredient[];
+  reasons: Partial<Record<Ingredient, string[]>>;
+}) {
+  const [selected, setSelected] = useState<Ingredient | null>(null);
+
+  function pillButton(ing: Ingredient, variant: "essential" | "other" | "covered") {
+    const styles = {
+      essential:
+        "border-foreground bg-foreground text-background hover:opacity-90",
+      other:
+        "border-black/[.08] bg-white text-black hover:border-black/[.2] dark:border-white/[.145] dark:bg-zinc-900 dark:text-zinc-50 dark:hover:border-white/[.3]",
+      covered:
+        "border-dashed border-black/[.15] text-zinc-600 hover:border-black/[.3] dark:border-white/[.2] dark:text-zinc-400 dark:hover:border-white/[.35]",
+    }[variant];
+    return (
+      <li key={ing}>
+        <button
+          type="button"
+          onClick={() => setSelected(ing)}
+          className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${styles}`}
+        >
+          {optionLabel(ing)}
+        </button>
+      </li>
+    );
+  }
 
   return (
     <div className="flex flex-1 flex-col items-center bg-zinc-50 px-6 py-16 font-sans dark:bg-black">
@@ -401,24 +704,20 @@ function ResultsView({
             ? "Drug-tested athlete: showing NSF Certified for Sport options only"
             : "Full catalog"}
         </p>
-        <h1 className="mb-8 text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">
+        <h1 className="mb-2 text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">
           Your recommendations
         </h1>
+        <p className="mb-8 text-sm text-zinc-500 dark:text-zinc-400">
+          Tap any supplement to see what it is, how it works, and why it&apos;s in your stack.
+        </p>
 
         <section className="mb-8">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-            Recommended for you
+            Essential
           </h2>
-          {toRecommend.length > 0 ? (
+          {essential.length > 0 ? (
             <ul className="flex flex-wrap gap-2">
-              {toRecommend.map((ing) => (
-                <li
-                  key={ing}
-                  className="rounded-full border border-black/[.08] bg-white px-4 py-1.5 text-sm font-medium text-black dark:border-white/[.145] dark:bg-zinc-900 dark:text-zinc-50"
-                >
-                  {optionLabel(ing)}
-                </li>
-              ))}
+              {essential.map((ing) => pillButton(ing, "essential"))}
             </ul>
           ) : (
             <p className="text-base text-zinc-600 dark:text-zinc-400">
@@ -428,20 +727,24 @@ function ResultsView({
           )}
         </section>
 
+        {otherOptions.length > 0 && (
+          <section className="mb-8">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Other options
+            </h2>
+            <ul className="flex flex-wrap gap-2">
+              {otherOptions.map((ing) => pillButton(ing, "other"))}
+            </ul>
+          </section>
+        )}
+
         {alreadyCovered.length > 0 && (
           <section className="mb-8">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
               Already covered
             </h2>
             <ul className="flex flex-wrap gap-2">
-              {alreadyCovered.map((ing) => (
-                <li
-                  key={ing}
-                  className="rounded-full border border-dashed border-black/[.15] px-4 py-1.5 text-sm font-medium text-zinc-600 dark:border-white/[.2] dark:text-zinc-400"
-                >
-                  {optionLabel(ing)}
-                </li>
-              ))}
+              {alreadyCovered.map((ing) => pillButton(ing, "covered"))}
             </ul>
           </section>
         )}
@@ -480,6 +783,66 @@ function ResultsView({
           </Link>
         </div>
       </div>
+
+      {selected && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6"
+          onClick={() => setSelected(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-6 dark:bg-zinc-900"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <h3 className="text-xl font-semibold text-black dark:text-zinc-50">
+                {optionLabel(selected)}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSelected(null)}
+                aria-label="Close"
+                className="text-lg text-zinc-500 transition-colors hover:text-black dark:text-zinc-400 dark:hover:text-zinc-50"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex flex-col gap-4 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+              <div>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
+                  What it is
+                </p>
+                <p>{INGREDIENT_INFO[selected].whatItIs}</p>
+              </div>
+              <div>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
+                  How it works
+                </p>
+                <p>{INGREDIENT_INFO[selected].howItWorks}</p>
+              </div>
+              <div>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
+                  What it does
+                </p>
+                <p>{INGREDIENT_INFO[selected].whatItDoes}</p>
+              </div>
+              <div>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
+                  Why it&apos;s in your stack
+                </p>
+                {(reasons[selected]?.length ?? 0) > 0 ? (
+                  <ul className="flex flex-col gap-1">
+                    {reasons[selected]!.map((r, i) => (
+                      <li key={i}>• {r}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>Included as part of your recommended stack.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
