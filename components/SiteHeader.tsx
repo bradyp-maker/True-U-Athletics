@@ -28,6 +28,9 @@ export default function SiteHeader() {
           <Link href="/about" className="transition-colors hover:text-foreground">
             About Us
           </Link>
+          <Link href="/coach" className="transition-colors hover:text-foreground">
+            Coach
+          </Link>
           <Link href="/shop" className="transition-colors hover:text-foreground">
             Supplement Shop
           </Link>
