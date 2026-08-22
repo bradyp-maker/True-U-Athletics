@@ -1,5 +1,63 @@
 import Link from "next/link";
+import { SignUpButton } from "@clerk/nextjs";
 import { CoachTeaser } from "@/components/CoachTeaser";
+
+type PlanFeature = { text: string; included: boolean };
+
+const PLANS: {
+  name: string;
+  tagline: string;
+  price: string;
+  priceSuffix?: string;
+  features: PlanFeature[];
+  highlight?: boolean;
+  badge?: string;
+  cta: "quiz" | "signup" | "coach";
+  ctaLabel: string;
+}[] = [
+  {
+    name: "Basic",
+    tagline: "No account required",
+    price: "$0",
+    features: [
+      { text: "Top 3 supplement picks", included: true },
+      { text: "Synergy breakdown", included: false },
+      { text: "Save your stack", included: false },
+      { text: "Coach access", included: false },
+    ],
+    cta: "quiz",
+    ctaLabel: "Take the Quiz",
+  },
+  {
+    name: "Amateur",
+    tagline: "Free account with email",
+    price: "$0",
+    features: [
+      { text: "1 full supplement stack, ever", included: true },
+      { text: "Full ingredient breakdown & synergy notes", included: true },
+      { text: "Save that stack to your account", included: true },
+      { text: "3 free questions with Coach", included: true },
+    ],
+    cta: "signup",
+    ctaLabel: "Create free account",
+  },
+  {
+    name: "MVP",
+    tagline: "For athletes who want more",
+    price: "$4.99",
+    priceSuffix: "/ month",
+    features: [
+      { text: "Generate up to 5 stacks a day", included: true },
+      { text: "Save up to 5 stacks to your account", included: true },
+      { text: "Unlimited access to Coach", included: true },
+      { text: "Cancel anytime", included: true },
+    ],
+    highlight: true,
+    badge: "Most popular",
+    cta: "coach",
+    ctaLabel: "Go unlimited with Coach",
+  },
+];
 
 const FEATURES = [
   {
@@ -124,7 +182,7 @@ export default function Home() {
 
       <CoachTeaser />
 
-      <section className="relative z-10 w-full max-w-4xl px-6 pb-28">
+      <section className="relative z-10 w-full max-w-6xl px-6 pb-28">
         <div className="mx-auto mb-10 max-w-lg text-center">
           <span className="rounded-full border border-white/10 bg-surface px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-accent">
             Plans
@@ -134,65 +192,72 @@ export default function Home() {
           </h2>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2">
-          <div className="rounded-3xl border border-white/10 bg-surface p-8">
-            <h3 className="font-display text-xl font-bold text-foreground">Free</h3>
-            <p className="mt-1 text-sm text-muted">Get started at no cost</p>
-            <div className="mt-6 flex items-baseline gap-1">
-              <span className="font-display text-4xl font-extrabold text-foreground">$0</span>
-            </div>
-            <ul className="mt-6 flex flex-col gap-3 text-sm text-muted">
-              {[
-                "1 full supplement stack, built around your training",
-                "Full ingredient breakdown and synergy notes",
-                "Save that stack to your account",
-                "3 free questions with Coach",
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-2">
-                  <CheckIcon className="text-muted" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-            <Link
-              href="/survey"
-              className="mt-8 flex h-11 items-center justify-center rounded-full border border-white/15 px-6 text-sm font-bold text-foreground transition-colors hover:border-white/30 hover:bg-surface-2"
+        <div className="grid gap-6 sm:grid-cols-3">
+          {PLANS.map((plan) => (
+            <div
+              key={plan.name}
+              className={`relative rounded-3xl border p-8 ${
+                plan.highlight
+                  ? "border-accent/30 bg-surface shadow-[0_0_50px_-16px_rgba(198,255,63,0.35)]"
+                  : "border-white/10 bg-surface"
+              }`}
             >
-              Take the Quiz
-            </Link>
-          </div>
+              {plan.badge && (
+                <span className="absolute -top-3 right-8 rounded-full bg-accent px-3 py-1 text-xs font-bold uppercase tracking-wide text-accent-foreground">
+                  {plan.badge}
+                </span>
+              )}
+              <h3 className="font-display text-xl font-bold text-foreground">{plan.name}</h3>
+              <p className="mt-1 text-sm text-muted">{plan.tagline}</p>
+              <div className="mt-6 flex items-baseline gap-1">
+                <span className="font-display text-4xl font-extrabold text-foreground">
+                  {plan.price}
+                </span>
+                {plan.priceSuffix && (
+                  <span className="text-sm font-medium text-muted">{plan.priceSuffix}</span>
+                )}
+              </div>
+              <ul className="mt-6 flex flex-col gap-3 text-sm">
+                {plan.features.map((feature) => (
+                  <li
+                    key={feature.text}
+                    className={`flex items-start gap-2 ${
+                      feature.included ? "text-foreground" : "text-muted-2"
+                    }`}
+                  >
+                    {feature.included ? (
+                      <CheckIcon className={plan.highlight ? "text-accent" : "text-muted"} />
+                    ) : (
+                      <XIcon className="text-muted-2" />
+                    )}
+                    {feature.text}
+                  </li>
+                ))}
+              </ul>
 
-          <div className="relative rounded-3xl border border-accent/30 bg-surface p-8 shadow-[0_0_50px_-16px_rgba(198,255,63,0.35)]">
-            <span className="absolute -top-3 right-8 rounded-full bg-accent px-3 py-1 text-xs font-bold uppercase tracking-wide text-accent-foreground">
-              Most popular
-            </span>
-            <h3 className="font-display text-xl font-bold text-foreground">Coach</h3>
-            <p className="mt-1 text-sm text-muted">For athletes who want more</p>
-            <div className="mt-6 flex items-baseline gap-1">
-              <span className="font-display text-4xl font-extrabold text-foreground">$4.99</span>
-              <span className="text-sm font-medium text-muted">/ month</span>
+              {plan.cta === "signup" ? (
+                <SignUpButton mode="modal" forceRedirectUrl="/survey">
+                  <button
+                    type="button"
+                    className="mt-8 flex h-11 w-full items-center justify-center rounded-full border border-white/15 px-6 text-sm font-bold text-foreground transition-colors hover:border-white/30 hover:bg-surface-2"
+                  >
+                    {plan.ctaLabel}
+                  </button>
+                </SignUpButton>
+              ) : (
+                <Link
+                  href={plan.cta === "quiz" ? "/survey" : "/coach"}
+                  className={
+                    plan.highlight
+                      ? "mt-8 flex h-11 items-center justify-center rounded-full bg-accent px-6 text-sm font-bold text-accent-foreground transition-all duration-200 hover:scale-[1.03] hover:shadow-[0_0_24px_-6px_rgba(198,255,63,0.55)] active:scale-[0.98]"
+                      : "mt-8 flex h-11 items-center justify-center rounded-full border border-white/15 px-6 text-sm font-bold text-foreground transition-colors hover:border-white/30 hover:bg-surface-2"
+                  }
+                >
+                  {plan.ctaLabel}
+                </Link>
+              )}
             </div>
-            <ul className="mt-6 flex flex-col gap-3 text-sm text-muted">
-              {[
-                "Generate up to 5 stacks a day",
-                "Save up to 5 stacks to your account",
-                "Unlimited access to Coach, your AI supplement coach",
-                "Ask about dosing, timing, and how your stack fits your training",
-                "Cancel anytime",
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-2">
-                  <CheckIcon className="text-accent" />
-                  <span className="text-foreground">{item}</span>
-                </li>
-              ))}
-            </ul>
-            <Link
-              href="/coach"
-              className="mt-8 flex h-11 items-center justify-center rounded-full bg-accent px-6 text-sm font-bold text-accent-foreground transition-all duration-200 hover:scale-[1.03] hover:shadow-[0_0_24px_-6px_rgba(198,255,63,0.55)] active:scale-[0.98]"
-            >
-              Go unlimited with Coach
-            </Link>
-          </div>
+          ))}
         </div>
       </section>
     </div>
@@ -212,6 +277,23 @@ function CheckIcon({ className = "" }: { className?: string }) {
       aria-hidden="true"
     >
       <path d="M20 6L9 17l-5-5" />
+    </svg>
+  );
+}
+
+function XIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`mt-0.5 h-4 w-4 shrink-0 ${className}`}
+      aria-hidden="true"
+    >
+      <path d="M18 6L6 18M6 6l12 12" />
     </svg>
   );
 }
