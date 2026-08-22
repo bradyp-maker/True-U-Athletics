@@ -23,7 +23,8 @@ export function CoachUpsell({ tier }: { tier: Tier }) {
             <span className="text-sm font-medium text-muted">/ month</span>
           </div>
           <ul className="mt-4 space-y-2 text-sm text-muted">
-            <li>Unlimited stacks, always full results</li>
+            <li>Up to 5 stacks a day, always full results</li>
+            <li>Save up to 5 stacks to your account</li>
             <li>Ask Coach anything about your supplement stack</li>
             <li>Cancel anytime</li>
           </ul>

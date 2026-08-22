@@ -31,6 +31,11 @@ export default function SiteHeader() {
           <Link href="/coach" className="transition-colors hover:text-foreground">
             Coach
           </Link>
+          {isSignedIn && (
+            <Link href="/stacks" className="transition-colors hover:text-foreground">
+              My Stacks
+            </Link>
+          )}
           <Link href="/shop" className="transition-colors hover:text-foreground">
             Supplement Shop
           </Link>

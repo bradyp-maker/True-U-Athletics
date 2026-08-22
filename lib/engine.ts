@@ -74,6 +74,24 @@ export type TrainingGoal = (typeof MULTI_SELECT.q2_goals.options)[number];
 export type Allergy = (typeof MULTI_SELECT.q8_allergies.options)[number];
 export type CurrentSupplement = (typeof MULTI_SELECT.q11_current.options)[number];
 
+export const GOAL_LABELS: Record<
+  (typeof MULTI_SELECT.q2_goals.options)[number],
+  string
+> = {
+  build_muscle: "Build Muscle",
+  lose_fat: "Lose Fat",
+  increase_strength: "Increase Strength & Explosiveness",
+  improve_endurance: "Improve Endurance",
+  improve_recovery: "Improve Recovery",
+  general_health: "General Health",
+};
+
+export function nameStackFromGoals(goals: readonly string[]): string {
+  if (goals.length === 0) return "My Stack";
+  const labels = goals.map((g) => GOAL_LABELS[g as keyof typeof GOAL_LABELS] ?? g);
+  return `${labels.join(" & ")} Stack`;
+}
+
 export type TrainingFrequency = (typeof SINGLE_SELECT.q3_frequency.options)[number];
 export type DrugTested = (typeof SINGLE_SELECT.q4_tested.options)[number];
 export type BiologicalSex = (typeof SINGLE_SELECT.q5_sex.options)[number];

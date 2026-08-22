@@ -4,21 +4,27 @@ import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 
 export const ANON_STACK_COOKIE = "tua_anon_stack_used";
 
-// Tier 3 (paid) is stubbed for now: no payment flow exists yet, but the
-// shape is here so upgrading a user's `publicMetadata.plan` to "paid"
-// later is all that's needed to unlock it.
 export type Tier = "anonymous" | "free" | "paid";
 
+// Free accounts get exactly one full-result stack, ever. Paid accounts have
+// no lifetime cap but are limited to PAID_DAILY_STACK_LIMIT generations per
+// calendar day (tracked separately from stackCount — see getEntitlement).
 export const TIER_LIMITS: Record<Tier, { maxStacks: number | null; fullResults: boolean }> = {
   anonymous: { maxStacks: 1, fullResults: false },
-  free: { maxStacks: 2, fullResults: true },
-  paid: { maxStacks: null, fullResults: true }, // null = unlimited, not wired up yet
+  free: { maxStacks: 1, fullResults: true },
+  paid: { maxStacks: null, fullResults: true }, // lifetime unlimited; capped at PAID_DAILY_STACK_LIMIT/day
 };
+
+export const PAID_DAILY_STACK_LIMIT = 5;
 
 export type Entitlement =
   | { tier: "anonymous"; stackCount: number }
   | { tier: "free"; stackCount: number; userId: string }
-  | { tier: "paid"; stackCount: number; userId: string };
+  | { tier: "paid"; stackCount: number; dailyCount: number; userId: string };
+
+function todayKey(): string {
+  return new Date().toISOString().slice(0, 10); // "YYYY-MM-DD", UTC
+}
 
 /** Reads the current user/visitor's tier and how many stacks they've generated so far. */
 export async function getEntitlement(): Promise<Entitlement> {
@@ -37,10 +43,23 @@ export async function getEntitlement(): Promise<Entitlement> {
       ? user.privateMetadata.stackCount
       : 0;
 
-  return { tier: plan, stackCount, userId };
+  if (plan === "paid") {
+    const today = todayKey();
+    const dailyCount =
+      user?.privateMetadata?.paidDailyDate === today &&
+      typeof user?.privateMetadata?.paidDailyCount === "number"
+        ? user.privateMetadata.paidDailyCount
+        : 0;
+    return { tier: "paid", stackCount, dailyCount, userId };
+  }
+
+  return { tier: "free", stackCount, userId };
 }
 
 export function canGenerate(entitlement: Entitlement): boolean {
+  if (entitlement.tier === "paid") {
+    return entitlement.dailyCount < PAID_DAILY_STACK_LIMIT;
+  }
   const limit = TIER_LIMITS[entitlement.tier].maxStacks;
   if (limit === null) return true;
   return entitlement.stackCount < limit;
@@ -60,8 +79,31 @@ export async function recordAuthedStackGenerated(
   entitlement: Extract<Entitlement, { tier: "free" | "paid" }>
 ): Promise<void> {
   const client = await clerkClient();
+  // Re-fetch fresh metadata rather than trusting the entitlement snapshot,
+  // so we don't clobber unrelated fields (savedStacks, stripe ids, etc.)
+  // written between when the entitlement was read and now.
+  const user = await client.users.getUser(entitlement.userId);
+
+  if (entitlement.tier === "free") {
+    await client.users.updateUserMetadata(entitlement.userId, {
+      privateMetadata: {
+        ...user.privateMetadata,
+        stackCount: entitlement.stackCount + 1,
+      },
+    });
+    return;
+  }
+
+  const today = todayKey();
+  const dailyCount = user.privateMetadata?.paidDailyDate === today ? entitlement.dailyCount : 0;
+
   await client.users.updateUserMetadata(entitlement.userId, {
-    privateMetadata: { stackCount: entitlement.stackCount + 1 },
+    privateMetadata: {
+      ...user.privateMetadata,
+      stackCount: entitlement.stackCount + 1,
+      paidDailyDate: today,
+      paidDailyCount: dailyCount + 1,
+    },
   });
 }
 

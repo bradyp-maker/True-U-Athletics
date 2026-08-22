@@ -8,9 +8,14 @@ import {
   showsFullResults,
   type Tier,
 } from "@/lib/entitlements";
+import { saveStack, type SaveStackResult } from "@/lib/savedStacks";
 
 export type GenerateStackResponse =
-  | { blocked: true; reason: "signup_required" | "limit_reached"; tier: Tier }
+  | {
+      blocked: true;
+      reason: "signup_required" | "limit_reached" | "daily_limit_reached";
+      tier: Tier;
+    }
   | {
       blocked: false;
       result: EngineResult;
@@ -27,7 +32,12 @@ export async function generateStackAction(
   if (!canGenerate(entitlement)) {
     return {
       blocked: true,
-      reason: entitlement.tier === "anonymous" ? "signup_required" : "limit_reached",
+      reason:
+        entitlement.tier === "anonymous"
+          ? "signup_required"
+          : entitlement.tier === "paid"
+            ? "daily_limit_reached"
+            : "limit_reached",
       tier: entitlement.tier,
     };
   }
@@ -52,4 +62,8 @@ export async function generateStackAction(
     fullResults: showsFullResults(entitlement),
     needsAnonMark,
   };
+}
+
+export async function saveStackAction(answers: Answers): Promise<SaveStackResult> {
+  return saveStack(answers);
 }
