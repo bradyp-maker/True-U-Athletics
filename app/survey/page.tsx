@@ -800,9 +800,25 @@ function ResultsViewInner({
         <button
           type="button"
           onClick={() => setSelected(ing)}
-          className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-150 ${styles}`}
+          className={`flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-150 ${styles}`}
         >
           {optionLabel(ing)}
+          {(variant === "essential" || variant === "other") && (
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-3.5 w-3.5 opacity-60"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <line x1="12" y1="11" x2="12" y2="16" />
+              <circle cx="12" cy="8" r="0.5" fill="currentColor" stroke="none" />
+            </svg>
+          )}
         </button>
       </li>
     );
@@ -849,7 +865,7 @@ function ResultsViewInner({
         {otherOptions.length > 0 && (
           <section className="mb-8">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-2">
-              Other options
+              Other supplements for your stack
             </h2>
             <ul className="flex flex-wrap gap-2">
               {otherOptions.map((ing) => pillButton(ing, "other"))}

@@ -1,0 +1,106 @@
+import Image from "next/image";
+import Link from "next/link";
+
+const STATS = [
+  { value: "2024", label: "NCAA First-Team All-American, high jump" },
+  { value: "2x", label: "AAC high jump champion, indoor & outdoor" },
+  { value: "7'3.75\"", label: "Personal-best high jump clearance" },
+  { value: "2024", label: "U.S. Olympic Trials qualifier" },
+];
+
+export default function About() {
+  return (
+    <div className="relative flex flex-1 flex-col items-center overflow-hidden bg-background">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-40 right-0 h-[32rem] w-[32rem] rounded-full bg-accent/15 blur-[120px]"
+      />
+
+      <section className="relative z-10 w-full max-w-4xl px-6 py-20 sm:py-28">
+        <span className="rounded-full border border-white/10 bg-surface px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-accent">
+          The Founder
+        </span>
+        <h1 className="mt-6 font-display text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
+          Built by an athlete who&apos;s
+          <br className="hidden sm:block" /> been on both sides of it.
+        </h1>
+
+        <div className="mt-12 grid gap-10 sm:grid-cols-[220px_1fr] sm:gap-12">
+          <div className="mx-auto w-48 shrink-0 sm:mx-0 sm:w-full">
+            <div className="relative aspect-[3/4] overflow-hidden rounded-2xl border border-white/10 bg-surface shadow-[0_0_40px_-12px_rgba(198,255,63,0.2)]">
+              <Image
+                src="/brady.webp"
+                alt="Brady Palen, founder of True U Athletics, in USC Track & Field gear"
+                fill
+                sizes="(min-width: 640px) 220px, 192px"
+                className="object-cover"
+                priority
+              />
+            </div>
+            <p className="mt-3 text-center text-sm text-muted sm:text-left">
+              Brady Palen
+              <br />
+              Founder, True U Athletics
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-5 text-base leading-7 text-muted">
+            <p>
+              I&apos;m Brady Palen, and I grew up in Beloit, Kansas — a small
+              town with no sports dietitian, no team nutritionist, and no
+              budget for either. As a high jumper, I was training a completely
+              different body and a completely different event than, say, the
+              lineman lifting next to me in the weight room. But the
+              supplement advice available to us was the same generic list for
+              everybody: whatever the label at the store told you to buy.
+            </p>
+            <p>
+              I pieced together what I could on my own through college at
+              Wichita State, where I became a two-time conference high jump
+              champion and a 2024 NCAA First-Team All-American. Then I
+              transferred to USC for my final year of eligibility — a program
+              with one of the best sports nutrition staffs in the country. For
+              the first time, I had a real nutritionist looking at my training
+              load, my event, and my body, and building a plan around all
+              three.
+            </p>
+            <p>
+              That contrast is the reason True U Athletics exists. The gap
+              between what I had access to at a small Kansas high school and
+              what I had access to at USC has nothing to do with how hard an
+              athlete works — it&apos;s just resources. Club athletes, high
+              school teams, and amateurs training on their own shouldn&apos;t
+              have to guess. True U Athletics takes the same kind of
+              researched, sport-specific thinking I finally got access to at
+              USC and puts it in one place, built around your training — not
+              a one-size-fits-all list.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-16 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {STATS.map((s) => (
+            <div
+              key={s.label}
+              className="rounded-2xl border border-white/10 bg-surface p-5 text-center transition-colors hover:border-white/20"
+            >
+              <p className="font-display text-2xl font-extrabold text-accent">
+                {s.value}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-muted">{s.label}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-16 flex justify-center">
+          <Link
+            href="/survey"
+            className="flex h-14 items-center justify-center rounded-full bg-accent px-9 text-base font-bold text-accent-foreground transition-all duration-200 hover:scale-[1.04] hover:shadow-[0_0_32px_-4px_rgba(198,255,63,0.6)] active:scale-[0.97]"
+          >
+            Build my stack
+          </Link>
+        </div>
+      </section>
+    </div>
+  );
+}

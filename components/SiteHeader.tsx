@@ -3,13 +3,18 @@ import Link from "next/link";
 export default function SiteHeader() {
   return (
     <header className="sticky top-0 z-20 border-b border-white/10 bg-background/80 backdrop-blur-md">
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6 sm:h-20">
-        <Link
-          href="/"
-          className="font-display text-lg font-extrabold tracking-tight text-foreground sm:text-xl"
-        >
-          True U <span className="text-accent">Athletics</span>
-        </Link>
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-3 sm:py-4">
+        <div className="flex flex-col justify-center">
+          <Link
+            href="/"
+            className="font-display text-lg font-extrabold tracking-tight text-foreground sm:text-xl"
+          >
+            True U <span className="text-accent">Athletics</span>
+          </Link>
+          <span className="text-sm font-medium text-muted">
+            Supplement stacks designed for every athlete
+          </span>
+        </div>
 
         <nav className="hidden items-center gap-8 text-sm font-medium text-muted sm:flex">
           <Link href="/about" className="transition-colors hover:text-foreground">
