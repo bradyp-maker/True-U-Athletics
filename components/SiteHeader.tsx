@@ -4,10 +4,29 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
 
+function CreditCardIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-4 w-4"
+      aria-hidden="true"
+    >
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <line x1="2" y1="10" x2="22" y2="10" />
+    </svg>
+  );
+}
+
 export default function SiteHeader() {
   const pathname = usePathname();
   const showQuizCta = pathname !== "/";
-  const { isLoaded, isSignedIn } = useUser();
+  const { isLoaded, isSignedIn, user } = useUser();
+  const isPaid = user?.publicMetadata?.plan === "paid";
 
   return (
     <header className="sticky top-0 z-20 border-b border-white/10 bg-background/80 backdrop-blur-md">
@@ -55,7 +74,28 @@ export default function SiteHeader() {
           )}
 
           {isLoaded && isSignedIn ? (
-            <UserButton />
+            <div className="flex items-center gap-2">
+              <span
+                className={
+                  isPaid
+                    ? "rounded-full bg-accent px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-accent-foreground"
+                    : "rounded-full border border-white/15 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-muted"
+                }
+              >
+                {isPaid ? "MVP" : "Amateur"}
+              </span>
+              <UserButton>
+                <UserButton.MenuItems>
+                  {isPaid && (
+                    <UserButton.Link
+                      label="Manage billing"
+                      href="/api/billing-portal"
+                      labelIcon={<CreditCardIcon />}
+                    />
+                  )}
+                </UserButton.MenuItems>
+              </UserButton>
+            </div>
           ) : isLoaded ? (
             <>
               <SignInButton mode="modal">
