@@ -596,6 +596,114 @@ const INGREDIENT_INFO: Record<
   },
 };
 
+type IngredientPair = { pair: [Ingredient, Ingredient]; reason: string };
+
+const SYNERGIES: IngredientPair[] = [
+  {
+    pair: ["creatine", "beta_alanine"],
+    reason: "Both support high-intensity power output — commonly stacked for strength and explosiveness.",
+  },
+  {
+    pair: ["creatine", "citrulline"],
+    reason: "Citrulline's blood flow boost pairs well with creatine's strength and power benefits.",
+  },
+  {
+    pair: ["beta_alanine", "citrulline"],
+    reason: "Together they support harder sets — buffering fatigue while improving blood flow.",
+  },
+  {
+    pair: ["caffeine", "beta_alanine"],
+    reason: "A classic pre-workout combo: caffeine for focus and drive, beta-alanine for muscular endurance.",
+  },
+  {
+    pair: ["caffeine", "citrulline"],
+    reason: "Both are commonly used pre-training to boost energy and blood flow together.",
+  },
+  {
+    pair: ["protein", "creatine"],
+    reason: "Protein supplies the building blocks for muscle repair while creatine fuels the effort that creates it.",
+  },
+  {
+    pair: ["protein_plant", "creatine"],
+    reason: "Protein supplies the building blocks for muscle repair while creatine fuels the effort that creates it.",
+  },
+  {
+    pair: ["vitamin_d", "calcium"],
+    reason: "Vitamin D increases calcium absorption in the gut, so they work best taken together.",
+  },
+  {
+    pair: ["vitamin_d", "magnesium"],
+    reason: "Magnesium is required to convert vitamin D into its active form in the body.",
+  },
+  {
+    pair: ["omega3", "joint_support"],
+    reason: "Both are anti-inflammatory and support joint comfort from different angles.",
+  },
+  {
+    pair: ["omega3_algae", "joint_support"],
+    reason: "Both are anti-inflammatory and support joint comfort from different angles.",
+  },
+  {
+    pair: ["magnesium", "melatonin"],
+    reason: "Both support the body's natural wind-down process for deeper sleep.",
+  },
+  {
+    pair: ["magnesium", "glycine"],
+    reason: "Both calm the nervous system and support deeper, more restorative sleep.",
+  },
+  {
+    pair: ["magnesium", "ashwagandha"],
+    reason: "Together they support the body's stress response and recovery overnight.",
+  },
+  {
+    pair: ["electrolytes", "carb_fuel"],
+    reason: "Covers both fluid/mineral balance and energy fueling during long training sessions.",
+  },
+  {
+    pair: ["electrolytes", "beetroot"],
+    reason: "Supports hydration and blood flow together during endurance efforts.",
+  },
+  {
+    pair: ["b12", "iron"],
+    reason: "Both support energy and red blood cell production — commonly paired on plant-based diets.",
+  },
+  {
+    pair: ["b12", "b_complex"],
+    reason: "B-complex covers the broader B-vitamin picture while B12 fills the most diet-restricted gap.",
+  },
+  {
+    pair: ["tart_cherry", "magnesium"],
+    reason: "Both support recovery and sleep quality after hard training.",
+  },
+];
+
+const CAUTIONS: IngredientPair[] = [
+  {
+    pair: ["calcium", "iron"],
+    reason: "Calcium can block iron absorption — take them at different times of day.",
+  },
+  {
+    pair: ["calcium", "magnesium"],
+    reason: "High doses compete for absorption — space them out rather than taking a big dose of both at once.",
+  },
+  {
+    pair: ["caffeine", "melatonin"],
+    reason: "They work against each other — caffeine stimulates while melatonin signals sleep. Keep them hours apart.",
+  },
+  {
+    pair: ["caffeine", "ashwagandha"],
+    reason: "Caffeine can counteract ashwagandha's calming, stress-lowering effect — consider taking at different times.",
+  },
+  {
+    pair: ["iron", "multivitamin"],
+    reason: "Many multivitamins already contain iron — check labels to avoid unintentionally doubling your dose.",
+  },
+  {
+    pair: ["melatonin", "ashwagandha"],
+    reason: "Both are calming — stacking full doses can cause excess grogginess. Start with one at a time.",
+  },
+];
+
 function ResultsView({
   result,
   onRestart,
@@ -696,6 +804,13 @@ function ResultsViewInner({
     );
   }
 
+  const relevantSynergies = SYNERGIES.filter(
+    (s) => result.stack.has(s.pair[0]) && result.stack.has(s.pair[1])
+  );
+  const relevantCautions = CAUTIONS.filter(
+    (c) => result.stack.has(c.pair[0]) && result.stack.has(c.pair[1])
+  );
+
   return (
     <div className="flex flex-1 flex-col items-center bg-zinc-50 px-6 py-16 font-sans dark:bg-black">
       <div className="w-full max-w-xl">
@@ -705,7 +820,7 @@ function ResultsViewInner({
             : "Full catalog"}
         </p>
         <h1 className="mb-2 text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">
-          Your recommendations
+          Your supplement stack
         </h1>
         <p className="mb-8 text-sm text-zinc-500 dark:text-zinc-400">
           Tap any supplement to see what it is, how it works, and why it&apos;s in your stack.
@@ -746,6 +861,58 @@ function ResultsViewInner({
             <ul className="flex flex-wrap gap-2">
               {alreadyCovered.map((ing) => pillButton(ing, "covered"))}
             </ul>
+          </section>
+        )}
+
+        {(relevantSynergies.length > 0 || relevantCautions.length > 0) && (
+          <section className="mb-8">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Synergy breakdown
+            </h2>
+            <div className="flex flex-col gap-4">
+              {relevantSynergies.length > 0 && (
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                    Take together
+                  </p>
+                  <ul className="flex flex-col gap-2">
+                    {relevantSynergies.map((s, i) => (
+                      <li
+                        key={i}
+                        className="rounded-xl border border-emerald-600/20 bg-emerald-50 px-4 py-3 text-sm leading-6 text-zinc-700 dark:border-emerald-400/20 dark:bg-emerald-950/20 dark:text-zinc-300"
+                      >
+                        <span className="font-medium text-black dark:text-zinc-50">
+                          {optionLabel(s.pair[0])} + {optionLabel(s.pair[1])}
+                        </span>
+                        <br />
+                        {s.reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {relevantCautions.length > 0 && (
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                    Take apart / use caution
+                  </p>
+                  <ul className="flex flex-col gap-2">
+                    {relevantCautions.map((c, i) => (
+                      <li
+                        key={i}
+                        className="rounded-xl border border-amber-600/20 bg-amber-50 px-4 py-3 text-sm leading-6 text-zinc-700 dark:border-amber-400/20 dark:bg-amber-950/20 dark:text-zinc-300"
+                      >
+                        <span className="font-medium text-black dark:text-zinc-50">
+                          {optionLabel(c.pair[0])} + {optionLabel(c.pair[1])}
+                        </span>
+                        <br />
+                        {c.reason}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           </section>
         )}
 
