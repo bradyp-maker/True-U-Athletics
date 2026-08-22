@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Sora } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { dark } from "@clerk/themes";
 import SiteHeader from "@/components/SiteHeader";
 import "./globals.css";
 
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <ClerkProvider
           appearance={{
+            theme: dark,
             variables: {
               colorPrimary: "#c6ff3f",
               colorPrimaryForeground: "#0a0a0b",
