@@ -1,34 +1,53 @@
 import "server-only";
-import { cookies } from "next/headers";
+import { auth, clerkClient, currentUser } from "@clerk/nextjs/server";
 
-export const COACH_TRIAL_COOKIE = "tua_coach_trial";
 export const COACH_TRIAL_MESSAGE_LIMIT = 3;
 
-export type CoachTrialState = { email: string; count: number };
+export type CoachTrialStatus =
+  | { allowed: false; reason: "signed_out" }
+  | { allowed: false; reason: "limit_reached" }
+  | { allowed: true; remaining: number | null }; // null = unlimited (paid)
 
-export async function getCoachTrialState(): Promise<CoachTrialState | null> {
-  const cookieStore = await cookies();
-  const raw = cookieStore.get(COACH_TRIAL_COOKIE)?.value;
-  if (!raw) return null;
-
-  try {
-    const parsed = JSON.parse(raw);
-    if (typeof parsed.email === "string" && typeof parsed.count === "number") {
-      return parsed;
-    }
-  } catch {
-    // malformed cookie — treat as no trial state
+/** Reads whether the signed-in user can send a Coach trial message right now. */
+export async function getCoachTrialStatus(): Promise<CoachTrialStatus> {
+  const { userId } = await auth();
+  if (!userId) {
+    return { allowed: false, reason: "signed_out" };
   }
-  return null;
+
+  const user = await currentUser();
+  const plan = user?.publicMetadata?.plan === "paid" ? "paid" : "free";
+  if (plan === "paid") {
+    return { allowed: true, remaining: null };
+  }
+
+  const count =
+    typeof user?.privateMetadata?.coachTrialCount === "number"
+      ? user.privateMetadata.coachTrialCount
+      : 0;
+
+  if (count >= COACH_TRIAL_MESSAGE_LIMIT) {
+    return { allowed: false, reason: "limit_reached" };
+  }
+  return { allowed: true, remaining: COACH_TRIAL_MESSAGE_LIMIT - count };
 }
 
-export async function setCoachTrialState(state: CoachTrialState): Promise<void> {
-  const cookieStore = await cookies();
-  cookieStore.set(COACH_TRIAL_COOKIE, JSON.stringify(state), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 365,
+/** Increments the signed-in free-tier user's Coach trial usage. No-op for paid users. */
+export async function recordCoachTrialMessage(): Promise<void> {
+  const { userId } = await auth();
+  if (!userId) return;
+
+  const client = await clerkClient();
+  const user = await client.users.getUser(userId);
+  const plan = user.publicMetadata?.plan === "paid" ? "paid" : "free";
+  if (plan === "paid") return;
+
+  const count =
+    typeof user.privateMetadata?.coachTrialCount === "number"
+      ? user.privateMetadata.coachTrialCount
+      : 0;
+
+  await client.users.updateUserMetadata(userId, {
+    privateMetadata: { ...user.privateMetadata, coachTrialCount: count + 1 },
   });
 }
