@@ -269,20 +269,26 @@ export default function SurveyPage() {
     setStep((s) => Math.max(0, s - 1));
   }
 
-  const AUTO_ADVANCE_ON_NONE = new Set(["q7_diet", "q8_allergies"]);
+  const AUTO_ADVANCE_ON_NONE = new Set(["q8_allergies"]);
 
   function handleOptionClick(opt: string, wasSelected: boolean) {
     if (question.kind === "multi") {
       toggleOption(question.key, opt);
-    } else {
-      selectSingle(question.key, opt);
+      if (
+        opt === "none" &&
+        !wasSelected &&
+        AUTO_ADVANCE_ON_NONE.has(question.key)
+      ) {
+        setStep((s) => Math.min(s + 1, QUESTIONS.length - 1));
+      }
+      return;
     }
-    if (
-      opt === "none" &&
-      !wasSelected &&
-      AUTO_ADVANCE_ON_NONE.has(question.key)
-    ) {
-      setStep((s) => Math.min(s + 1, QUESTIONS.length - 1));
+
+    selectSingle(question.key, opt);
+    if (isLastStep) {
+      setResult(buildStack({ ...answers, [question.key]: opt } as Answers));
+    } else {
+      setStep((s) => s + 1);
     }
   }
 
@@ -297,19 +303,19 @@ export default function SurveyPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center bg-zinc-50 px-6 py-16 font-sans dark:bg-black">
-      <div className="w-full max-w-xl">
-        <p className="mb-2 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+    <div className="flex flex-1 flex-col items-center bg-background px-6 py-16 sm:py-24">
+      <div key={step} className="w-full max-w-xl animate-fade-up">
+        <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-accent">
           Question {step + 1} of {QUESTIONS.length}
         </p>
-        <div className="mb-8 h-1.5 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+        <div className="mb-8 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
           <div
-            className="h-full rounded-full bg-foreground transition-all"
+            className="h-full rounded-full bg-accent transition-all duration-300"
             style={{ width: `${((step + 1) / QUESTIONS.length) * 100}%` }}
           />
         </div>
 
-        <h1 className="mb-6 text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">
+        <h1 className="mb-6 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
           {question.label}
         </h1>
 
@@ -329,19 +335,17 @@ export default function SurveyPage() {
                 key={opt}
                 type="button"
                 onClick={() => handleOptionClick(opt, selected)}
-                className={`flex flex-col items-start justify-center rounded-xl border px-5 py-3 text-left text-base transition-colors ${
+                className={`flex flex-col items-start justify-center rounded-xl border px-5 py-3.5 text-left text-base transition-all duration-150 ${
                   selected
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-black/[.08] bg-white text-black hover:border-black/[.2] dark:border-white/[.145] dark:bg-zinc-900 dark:text-zinc-50 dark:hover:border-white/[.3]"
+                    ? "border-accent bg-accent text-accent-foreground shadow-[0_0_24px_-6px_rgba(198,255,63,0.5)]"
+                    : "border-white/10 bg-surface text-foreground hover:border-white/25 hover:bg-surface-2"
                 }`}
               >
-                <span>{optionLabel(opt)}</span>
+                <span className="font-medium">{optionLabel(opt)}</span>
                 {description && (
                   <span
                     className={`text-sm ${
-                      selected
-                        ? "text-background/70"
-                        : "text-zinc-500 dark:text-zinc-400"
+                      selected ? "text-accent-foreground/70" : "text-muted"
                     }`}
                   >
                     {description}
@@ -369,17 +373,17 @@ export default function SurveyPage() {
                   <button
                     type="button"
                     onClick={() => setOtherMenuOpen((v) => !v)}
-                    className="flex w-full items-center justify-between rounded-xl border border-dashed border-black/[.15] bg-white px-5 py-3 text-left text-base text-black transition-colors hover:border-black/[.3] dark:border-white/[.2] dark:bg-zinc-900 dark:text-zinc-50 dark:hover:border-white/[.35]"
+                    className="flex w-full items-center justify-between rounded-xl border border-dashed border-white/15 bg-transparent px-5 py-3.5 text-left text-base text-foreground transition-colors hover:border-white/30 hover:bg-surface"
                   >
-                    <span>Other supplements</span>
-                    <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                    <span className="font-medium">Other supplements</span>
+                    <span className="text-sm text-muted">
                       {otherSelectedCount > 0
                         ? `${otherSelectedCount} selected`
                         : "Show more"}
                     </span>
                   </button>
                   {otherMenuOpen && (
-                    <div className="mt-3 flex flex-col gap-2 rounded-xl border border-black/[.08] bg-white p-3 dark:border-white/[.145] dark:bg-zinc-900">
+                    <div className="mt-3 flex flex-col gap-2 rounded-xl border border-white/10 bg-surface p-3">
                       {otherOptions.map((opt) => {
                         const selected = currentSelections.includes(opt);
                         const description = optionDescription(
@@ -393,18 +397,18 @@ export default function SurveyPage() {
                             onClick={() => toggleOption(question.key, opt)}
                             className={`flex items-center justify-between rounded-lg border px-4 py-2.5 text-left text-sm transition-colors ${
                               selected
-                                ? "border-foreground bg-foreground text-background"
-                                : "border-black/[.08] bg-white text-black hover:border-black/[.2] dark:border-white/[.145] dark:bg-zinc-900 dark:text-zinc-50 dark:hover:border-white/[.3]"
+                                ? "border-accent bg-accent text-accent-foreground"
+                                : "border-white/10 bg-surface-2 text-foreground hover:border-white/25"
                             }`}
                           >
                             <span className="flex flex-col items-start">
-                              <span>{optionLabel(opt)}</span>
+                              <span className="font-medium">{optionLabel(opt)}</span>
                               {description && (
                                 <span
                                   className={`text-xs ${
                                     selected
-                                      ? "text-background/70"
-                                      : "text-zinc-500 dark:text-zinc-400"
+                                      ? "text-accent-foreground/70"
+                                      : "text-muted"
                                   }`}
                                 >
                                   {description}
@@ -427,7 +431,7 @@ export default function SurveyPage() {
             type="button"
             onClick={handleBack}
             disabled={step === 0}
-            className="rounded-full px-5 py-2.5 text-base font-medium text-zinc-600 disabled:opacity-0 dark:text-zinc-400"
+            className="rounded-full px-5 py-2.5 text-base font-medium text-muted transition-colors hover:text-foreground disabled:opacity-0"
           >
             Back
           </button>
@@ -435,7 +439,7 @@ export default function SurveyPage() {
             type="button"
             onClick={handleNext}
             disabled={!canProceed()}
-            className="rounded-full bg-foreground px-8 py-2.5 text-base font-medium text-background transition-colors hover:bg-[#383838] disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-[#ccc]"
+            className="rounded-full bg-accent px-8 py-2.5 text-base font-bold text-accent-foreground transition-all duration-200 hover:scale-[1.03] hover:shadow-[0_0_24px_-6px_rgba(198,255,63,0.55)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-30"
           >
             {isLastStep ? "See my results" : "Next"}
           </button>
@@ -713,12 +717,12 @@ function ResultsView({
 }) {
   if (result.gate === "UNDER_18_BLOCK") {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 px-6 py-16 text-center font-sans dark:bg-black">
-        <div className="w-full max-w-lg">
-          <h1 className="mb-4 text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">
+      <div className="flex flex-1 flex-col items-center justify-center bg-background px-6 py-16 text-center">
+        <div className="w-full max-w-lg animate-fade-up">
+          <h1 className="mb-4 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             We can&apos;t recommend supplements here
           </h1>
-          <p className="mb-8 text-lg leading-8 text-zinc-600 dark:text-zinc-400">
+          <p className="mb-8 text-lg leading-8 text-muted">
             Supplement recommendations aren&apos;t available for athletes under 18.
             Please talk to a parent, guardian, or physician about what&apos;s
             appropriate.
@@ -727,13 +731,13 @@ function ResultsView({
             <button
               type="button"
               onClick={onRestart}
-              className="rounded-full border border-black/[.08] px-6 py-2.5 text-base font-medium text-black transition-colors hover:bg-black/[.04] dark:border-white/[.145] dark:text-zinc-50 dark:hover:bg-[#1a1a1a]"
+              className="rounded-full border border-white/10 px-6 py-2.5 text-base font-medium text-foreground transition-colors hover:border-white/25 hover:bg-surface"
             >
               Start over
             </button>
             <Link
               href="/"
-              className="flex items-center rounded-full bg-foreground px-6 py-2.5 text-base font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+              className="flex items-center rounded-full bg-accent px-6 py-2.5 text-base font-bold text-accent-foreground transition-all duration-200 hover:scale-[1.03] hover:shadow-[0_0_24px_-6px_rgba(198,255,63,0.55)] active:scale-[0.98]"
             >
               Back home
             </Link>
@@ -785,18 +789,18 @@ function ResultsViewInner({
   function pillButton(ing: Ingredient, variant: "essential" | "other" | "covered") {
     const styles = {
       essential:
-        "border-foreground bg-foreground text-background hover:opacity-90",
+        "border-accent bg-accent text-accent-foreground shadow-[0_0_20px_-6px_rgba(198,255,63,0.5)] hover:scale-[1.04]",
       other:
-        "border-black/[.08] bg-white text-black hover:border-black/[.2] dark:border-white/[.145] dark:bg-zinc-900 dark:text-zinc-50 dark:hover:border-white/[.3]",
+        "border-white/10 bg-surface text-foreground hover:border-white/25 hover:bg-surface-2 hover:scale-[1.04]",
       covered:
-        "border-dashed border-black/[.15] text-zinc-600 hover:border-black/[.3] dark:border-white/[.2] dark:text-zinc-400 dark:hover:border-white/[.35]",
+        "border-dashed border-white/15 text-muted hover:border-white/30 hover:scale-[1.04]",
     }[variant];
     return (
       <li key={ing}>
         <button
           type="button"
           onClick={() => setSelected(ing)}
-          className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${styles}`}
+          className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-150 ${styles}`}
         >
           {optionLabel(ing)}
         </button>
@@ -812,22 +816,22 @@ function ResultsViewInner({
   );
 
   return (
-    <div className="flex flex-1 flex-col items-center bg-zinc-50 px-6 py-16 font-sans dark:bg-black">
-      <div className="w-full max-w-xl">
-        <p className="mb-2 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+    <div className="flex flex-1 flex-col items-center bg-background px-6 py-16 sm:py-24">
+      <div className="w-full max-w-xl animate-fade-up">
+        <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-accent">
           {result.gate === "certified_only"
             ? "Drug-tested athlete: showing NSF Certified for Sport options only"
             : "Full catalog"}
         </p>
-        <h1 className="mb-2 text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">
+        <h1 className="mb-2 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
           Your supplement stack
         </h1>
-        <p className="mb-8 text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="mb-8 text-sm text-muted">
           Tap any supplement to see what it is, how it works, and why it&apos;s in your stack.
         </p>
 
         <section className="mb-8">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-2">
             Essential
           </h2>
           {essential.length > 0 ? (
@@ -835,7 +839,7 @@ function ResultsViewInner({
               {essential.map((ing) => pillButton(ing, "essential"))}
             </ul>
           ) : (
-            <p className="text-base text-zinc-600 dark:text-zinc-400">
+            <p className="text-base text-muted">
               Nothing new to add — you&apos;re already covering everything we&apos;d
               suggest.
             </p>
@@ -844,7 +848,7 @@ function ResultsViewInner({
 
         {otherOptions.length > 0 && (
           <section className="mb-8">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-2">
               Other options
             </h2>
             <ul className="flex flex-wrap gap-2">
@@ -855,7 +859,7 @@ function ResultsViewInner({
 
         {alreadyCovered.length > 0 && (
           <section className="mb-8">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-2">
               Already covered
             </h2>
             <ul className="flex flex-wrap gap-2">
@@ -866,22 +870,22 @@ function ResultsViewInner({
 
         {(relevantSynergies.length > 0 || relevantCautions.length > 0) && (
           <section className="mb-8">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-2">
               Synergy breakdown
             </h2>
             <div className="flex flex-col gap-4">
               {relevantSynergies.length > 0 && (
                 <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-accent">
                     Take together
                   </p>
                   <ul className="flex flex-col gap-2">
                     {relevantSynergies.map((s, i) => (
                       <li
                         key={i}
-                        className="rounded-xl border border-emerald-600/20 bg-emerald-50 px-4 py-3 text-sm leading-6 text-zinc-700 dark:border-emerald-400/20 dark:bg-emerald-950/20 dark:text-zinc-300"
+                        className="rounded-xl border border-accent/20 bg-accent-soft px-4 py-3 text-sm leading-6 text-muted"
                       >
-                        <span className="font-medium text-black dark:text-zinc-50">
+                        <span className="font-medium text-foreground">
                           {optionLabel(s.pair[0])} + {optionLabel(s.pair[1])}
                         </span>
                         <br />
@@ -893,16 +897,16 @@ function ResultsViewInner({
               )}
               {relevantCautions.length > 0 && (
                 <div>
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-caution">
                     Take apart / use caution
                   </p>
                   <ul className="flex flex-col gap-2">
                     {relevantCautions.map((c, i) => (
                       <li
                         key={i}
-                        className="rounded-xl border border-amber-600/20 bg-amber-50 px-4 py-3 text-sm leading-6 text-zinc-700 dark:border-amber-400/20 dark:bg-amber-950/20 dark:text-zinc-300"
+                        className="rounded-xl border border-caution/20 bg-caution-soft px-4 py-3 text-sm leading-6 text-muted"
                       >
-                        <span className="font-medium text-black dark:text-zinc-50">
+                        <span className="font-medium text-foreground">
                           {optionLabel(c.pair[0])} + {optionLabel(c.pair[1])}
                         </span>
                         <br />
@@ -918,15 +922,12 @@ function ResultsViewInner({
 
         {result.notes.length > 0 && (
           <section className="mb-10">
-            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-2">
               Notes
             </h2>
             <ul className="flex flex-col gap-2">
               {result.notes.map((note, i) => (
-                <li
-                  key={i}
-                  className="text-sm leading-6 text-zinc-600 dark:text-zinc-400"
-                >
+                <li key={i} className="text-sm leading-6 text-muted">
                   {note}
                 </li>
               ))}
@@ -938,13 +939,13 @@ function ResultsViewInner({
           <button
             type="button"
             onClick={onRestart}
-            className="rounded-full border border-black/[.08] px-6 py-2.5 text-base font-medium text-black transition-colors hover:bg-black/[.04] dark:border-white/[.145] dark:text-zinc-50 dark:hover:bg-[#1a1a1a]"
+            className="rounded-full border border-white/10 px-6 py-2.5 text-base font-medium text-foreground transition-colors hover:border-white/25 hover:bg-surface"
           >
             Retake survey
           </button>
           <Link
             href="/"
-            className="flex items-center rounded-full bg-foreground px-6 py-2.5 text-base font-medium text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+            className="flex items-center rounded-full bg-accent px-6 py-2.5 text-base font-bold text-accent-foreground transition-all duration-200 hover:scale-[1.03] hover:shadow-[0_0_24px_-6px_rgba(198,255,63,0.55)] active:scale-[0.98]"
           >
             Back home
           </Link>
@@ -953,47 +954,47 @@ function ResultsViewInner({
 
       {selected && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-6"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6 backdrop-blur-sm"
           onClick={() => setSelected(null)}
         >
           <div
-            className="w-full max-w-md rounded-2xl bg-white p-6 dark:bg-zinc-900"
+            className="w-full max-w-md animate-fade-up rounded-2xl border border-white/10 bg-surface p-6 shadow-[0_0_60px_-12px_rgba(198,255,63,0.15)]"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-start justify-between gap-4">
-              <h3 className="text-xl font-semibold text-black dark:text-zinc-50">
+              <h3 className="font-display text-xl font-bold text-foreground">
                 {optionLabel(selected)}
               </h3>
               <button
                 type="button"
                 onClick={() => setSelected(null)}
                 aria-label="Close"
-                className="text-lg text-zinc-500 transition-colors hover:text-black dark:text-zinc-400 dark:hover:text-zinc-50"
+                className="text-lg text-muted transition-colors hover:text-foreground"
               >
                 ✕
               </button>
             </div>
-            <div className="flex flex-col gap-4 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+            <div className="flex flex-col gap-4 text-sm leading-6 text-muted">
               <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-2">
                   What it is
                 </p>
                 <p>{INGREDIENT_INFO[selected].whatItIs}</p>
               </div>
               <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-2">
                   How it works
                 </p>
                 <p>{INGREDIENT_INFO[selected].howItWorks}</p>
               </div>
               <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-2">
                   What it does
                 </p>
                 <p>{INGREDIENT_INFO[selected].whatItDoes}</p>
               </div>
               <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-500">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-2">
                   Why it&apos;s in your stack
                 </p>
                 {(reasons[selected]?.length ?? 0) > 0 ? (

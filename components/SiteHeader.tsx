@@ -2,23 +2,23 @@ import Link from "next/link";
 
 export default function SiteHeader() {
   return (
-    <header className="sticky top-0 z-10 border-b border-black/[.08] bg-white/80 backdrop-blur dark:border-white/[.145] dark:bg-black/80">
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
+    <header className="sticky top-0 z-20 border-b border-white/10 bg-background/80 backdrop-blur-md">
+      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6 sm:h-20">
         <Link
           href="/"
-          className="text-lg font-semibold tracking-tight text-black dark:text-zinc-50"
+          className="font-display text-lg font-extrabold tracking-tight text-foreground sm:text-xl"
         >
-          True U Athletics
+          True U <span className="text-accent">Athletics</span>
         </Link>
 
-        <nav className="hidden items-center gap-8 text-sm font-medium text-zinc-600 sm:flex dark:text-zinc-400">
-          <Link href="/about" className="hover:text-black dark:hover:text-zinc-50">
+        <nav className="hidden items-center gap-8 text-sm font-medium text-muted sm:flex">
+          <Link href="/about" className="transition-colors hover:text-foreground">
             About Us
           </Link>
-          <Link href="/shop" className="hover:text-black dark:hover:text-zinc-50">
+          <Link href="/shop" className="transition-colors hover:text-foreground">
             Supplement Shop
           </Link>
-          <Link href="/contact" className="hover:text-black dark:hover:text-zinc-50">
+          <Link href="/contact" className="transition-colors hover:text-foreground">
             Contact Us
           </Link>
         </nav>
@@ -26,13 +26,13 @@ export default function SiteHeader() {
         <div className="flex items-center gap-4 text-sm font-medium">
           <Link
             href="/login"
-            className="text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-zinc-50"
+            className="text-muted transition-colors hover:text-foreground"
           >
             Log in
           </Link>
           <Link
             href="/signup"
-            className="rounded-full bg-foreground px-4 py-2 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc]"
+            className="flex h-10 items-center justify-center rounded-full bg-accent px-5 font-semibold text-accent-foreground transition-all duration-200 hover:scale-[1.04] hover:shadow-[0_0_24px_-4px_rgba(198,255,63,0.6)] active:scale-[0.97]"
           >
             Sign up
           </Link>
