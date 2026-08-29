@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { parseCoachMessage } from "@/lib/parseCoachMessage";
+import type { ScheduleData } from "@/lib/parseCoachMessage";
 import { ScheduleCard, ScheduleLoadingCard } from "@/components/ScheduleCard";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -14,8 +15,10 @@ const STARTER_PROMPTS = [
 
 export default function CoachClient({
   manageBillingAction,
+  addScheduleToCalendarAction,
 }: {
   manageBillingAction: () => Promise<void>;
+  addScheduleToCalendarAction: (schedule: ScheduleData) => Promise<{ ok: boolean }>;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -134,7 +137,13 @@ export default function CoachClient({
                 <div key={index} className="flex flex-col items-start gap-2">
                   {segments.map((segment, si) => {
                     if (segment.type === "schedule") {
-                      return <ScheduleCard key={si} data={segment.data} />;
+                      return (
+                        <ScheduleCard
+                          key={si}
+                          data={segment.data}
+                          onAddToCalendar={addScheduleToCalendarAction}
+                        />
+                      );
                     }
                     if (segment.type === "schedule-loading") {
                       return <ScheduleLoadingCard key={si} />;

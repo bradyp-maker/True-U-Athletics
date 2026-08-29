@@ -1,7 +1,7 @@
 import { CoachUpsell } from "@/components/CoachUpsell";
 import { getEntitlement } from "@/lib/entitlements";
 import CoachClient from "./CoachClient";
-import { createBillingPortalSessionAction } from "./actions";
+import { createBillingPortalSessionAction, addScheduleToCalendarAction } from "./actions";
 
 export default async function CoachPage() {
   const entitlement = await getEntitlement();
@@ -10,5 +10,10 @@ export default async function CoachPage() {
     return <CoachUpsell tier={entitlement.tier} />;
   }
 
-  return <CoachClient manageBillingAction={createBillingPortalSessionAction} />;
+  return (
+    <CoachClient
+      manageBillingAction={createBillingPortalSessionAction}
+      addScheduleToCalendarAction={addScheduleToCalendarAction}
+    />
+  );
 }

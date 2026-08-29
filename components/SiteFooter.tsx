@@ -4,6 +4,7 @@ const COMPANY_LINKS = [
   { href: "/about", label: "About Us" },
   { href: "/coach", label: "Coach" },
   { href: "/stacks", label: "My Stacks" },
+  { href: "/calendar", label: "Calendar" },
 ];
 
 const LEGAL_LINKS = [

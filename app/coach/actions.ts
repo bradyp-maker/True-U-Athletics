@@ -4,6 +4,8 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { stripe, COACH_PRICE_ID } from "@/lib/stripe";
+import { insertScheduleFromCoach } from "@/lib/calendarEntries";
+import type { ScheduleData } from "@/lib/parseCoachMessage";
 
 async function getOrigin(): Promise<string> {
   const hdrs = await headers();
@@ -59,4 +61,8 @@ export async function createBillingPortalSessionAction(): Promise<void> {
   });
 
   redirect(portalSession.url);
+}
+
+export async function addScheduleToCalendarAction(schedule: ScheduleData) {
+  return insertScheduleFromCoach(schedule);
 }

@@ -1,10 +1,42 @@
+"use client";
+
+import { useState } from "react";
 import type { ScheduleData } from "@/lib/parseCoachMessage";
 
-export function ScheduleCard({ data }: { data: ScheduleData }) {
+export function ScheduleCard({
+  data,
+  onAddToCalendar,
+}: {
+  data: ScheduleData;
+  onAddToCalendar?: (schedule: ScheduleData) => Promise<{ ok: boolean }>;
+}) {
+  const [status, setStatus] = useState<"idle" | "saving" | "added" | "error">("idle");
+
+  async function handleAdd() {
+    if (!onAddToCalendar) return;
+    setStatus("saving");
+    try {
+      const result = await onAddToCalendar(data);
+      setStatus(result.ok ? "added" : "error");
+    } catch {
+      setStatus("error");
+    }
+  }
+
   return (
     <div className="w-full overflow-hidden rounded-2xl border border-accent/20 bg-surface-2">
-      <div className="border-b border-white/10 bg-accent-soft px-4 py-3">
+      <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-accent-soft px-4 py-3">
         <p className="font-display text-sm font-bold text-foreground">{data.title}</p>
+        {onAddToCalendar && (
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={status === "saving" || status === "added"}
+            className="flex h-7 shrink-0 items-center justify-center rounded-full bg-accent px-3 text-xs font-bold text-accent-foreground transition-all duration-200 hover:scale-[1.04] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100"
+          >
+            {status === "saving" ? "Adding…" : status === "added" ? "Added ✓" : "Add to Calendar"}
+          </button>
+        )}
       </div>
       <div className="divide-y divide-white/5">
         {data.days.map((day, index) => (
@@ -30,6 +62,11 @@ export function ScheduleCard({ data }: { data: ScheduleData }) {
           </div>
         ))}
       </div>
+      {status === "error" && (
+        <p className="px-4 py-2 text-xs text-caution">
+          Couldn&apos;t add this to your calendar. Please try again.
+        </p>
+      )}
     </div>
   );
 }

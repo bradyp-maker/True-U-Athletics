@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
+import { MoreMenu } from "@/components/MoreMenu";
 
 function CreditCardIcon() {
   return (
@@ -44,9 +45,6 @@ export default function SiteHeader() {
         </div>
 
         <nav className="hidden items-center gap-8 text-sm font-medium text-muted sm:flex">
-          <Link href="/about" className="transition-colors hover:text-foreground">
-            About Us
-          </Link>
           <Link href="/coach" className="transition-colors hover:text-foreground">
             Coach
           </Link>
@@ -55,12 +53,12 @@ export default function SiteHeader() {
               My Stacks
             </Link>
           )}
-          <Link href="/shop" className="transition-colors hover:text-foreground">
-            Supplement Shop
-          </Link>
-          <Link href="/contact" className="transition-colors hover:text-foreground">
-            Contact Us
-          </Link>
+          {isSignedIn && (
+            <Link href="/calendar" className="transition-colors hover:text-foreground">
+              Calendar
+            </Link>
+          )}
+          <MoreMenu />
         </nav>
 
         <div className="flex items-center gap-4 text-sm font-medium">
