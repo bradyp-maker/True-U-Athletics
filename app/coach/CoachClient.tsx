@@ -1,6 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { parseCoachMessage } from "@/lib/parseCoachMessage";
+import { ScheduleCard, ScheduleLoadingCard } from "@/components/ScheduleCard";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -111,23 +113,44 @@ export default function CoachClient({
               </div>
             </div>
           ) : (
-            messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-6 ${
-                    message.role === "user"
-                      ? "bg-accent text-accent-foreground"
-                      : "bg-surface-2 text-foreground"
-                  }`}
-                >
-                  {message.content ||
-                    (isStreaming && index === messages.length - 1 ? "Game planning…" : "")}
+            messages.map((message, index) => {
+              if (message.role === "user") {
+                return (
+                  <div key={index} className="flex justify-end">
+                    <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl bg-accent px-4 py-3 text-sm leading-6 text-accent-foreground">
+                      {message.content}
+                    </div>
+                  </div>
+                );
+              }
+
+              const isLast = index === messages.length - 1;
+              const segments =
+                !message.content && isStreaming && isLast
+                  ? [{ type: "text" as const, text: "Game planning…" }]
+                  : parseCoachMessage(message.content);
+
+              return (
+                <div key={index} className="flex flex-col items-start gap-2">
+                  {segments.map((segment, si) => {
+                    if (segment.type === "schedule") {
+                      return <ScheduleCard key={si} data={segment.data} />;
+                    }
+                    if (segment.type === "schedule-loading") {
+                      return <ScheduleLoadingCard key={si} />;
+                    }
+                    return (
+                      <div
+                        key={si}
+                        className="max-w-[85%] whitespace-pre-wrap rounded-2xl bg-surface-2 px-4 py-3 text-sm leading-6 text-foreground"
+                      >
+                        {segment.text}
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
