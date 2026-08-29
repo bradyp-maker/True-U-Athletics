@@ -27,7 +27,7 @@ export default function CoachClient({
 
     setError(null);
     const nextMessages: ChatMessage[] = [...messages, { role: "user", content: trimmed }];
-    setMessages(nextMessages);
+    setMessages([...nextMessages, { role: "assistant", content: "" }]);
     setInput("");
     setIsStreaming(true);
 
@@ -41,8 +41,6 @@ export default function CoachClient({
       if (!response.ok || !response.body) {
         throw new Error("Coach couldn't respond. Please try again.");
       }
-
-      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -60,6 +58,7 @@ export default function CoachClient({
         scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
       }
     } catch {
+      setMessages((prev) => prev.slice(0, -1));
       setError("Something went wrong reaching Coach. Please try again.");
     } finally {
       setIsStreaming(false);
@@ -90,7 +89,7 @@ export default function CoachClient({
 
         <div
           ref={scrollRef}
-          className="mt-8 flex-1 space-y-4 overflow-y-auto rounded-2xl border border-white/10 bg-surface p-6"
+          className="mt-8 h-[30rem] space-y-4 overflow-y-auto rounded-2xl border border-white/10 bg-surface p-6"
         >
           {messages.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
@@ -124,7 +123,8 @@ export default function CoachClient({
                       : "bg-surface-2 text-foreground"
                   }`}
                 >
-                  {message.content || (isStreaming && index === messages.length - 1 ? "…" : "")}
+                  {message.content ||
+                    (isStreaming && index === messages.length - 1 ? "Game planning…" : "")}
                 </div>
               </div>
             ))

@@ -47,7 +47,7 @@ export function CoachTeaser() {
     hasSentRef.current = true;
     setError(null);
     const nextMessages: ChatMessage[] = [...messages, { role: "user", content: trimmed }];
-    setMessages(nextMessages);
+    setMessages([...nextMessages, { role: "assistant", content: "" }]);
     setInput("");
     setIsStreaming(true);
 
@@ -60,6 +60,7 @@ export function CoachTeaser() {
 
       if (response.status === 403) {
         const data = (await response.json()) as { reason: "signed_out" | "limit_reached" };
+        setMessages((prev) => prev.slice(0, -1));
         setStatus({ allowed: false, reason: data.reason });
         return;
       }
@@ -67,8 +68,6 @@ export function CoachTeaser() {
       if (!response.ok || !response.body) {
         throw new Error("Coach couldn't respond. Please try again.");
       }
-
-      setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -94,6 +93,7 @@ export function CoachTeaser() {
           : { allowed: true, remaining };
       });
     } catch {
+      setMessages((prev) => prev.slice(0, -1));
       setError("Something went wrong reaching Coach. Please try again.");
     } finally {
       setIsStreaming(false);
@@ -153,7 +153,8 @@ export function CoachTeaser() {
                         : "bg-surface-2 text-foreground"
                     }`}
                   >
-                    {message.content || (isStreaming && index === messages.length - 1 ? "…" : "")}
+                    {message.content ||
+                      (isStreaming && index === messages.length - 1 ? "Game planning…" : "")}
                   </div>
                 </div>
               ))
