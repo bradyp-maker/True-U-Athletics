@@ -65,11 +65,15 @@ export async function POST(request: Request) {
           controller.enqueue(encoder.encode(delta));
         });
 
-        claudeStream.on("error", (err) => logCoachError(err));
+        claudeStream.on("error", (err) => {
+          logCoachError(err);
+          controller.error(err);
+        });
 
         await claudeStream.finalMessage();
       } catch (error) {
         logCoachError(error);
+        // error already surfaced via the "error" listener above
       } finally {
         controller.close();
       }
