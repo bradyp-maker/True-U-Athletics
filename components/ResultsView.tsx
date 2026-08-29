@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { SignUpButton } from "@clerk/nextjs";
 import type { EngineResult, Ingredient } from "@/lib/engine";
 import { optionLabel } from "@/lib/labels";
+import { getProductsForIngredient } from "@/lib/shopProducts";
 
 const INGREDIENT_INFO: Record<
   Ingredient,
@@ -280,6 +281,7 @@ export function ResultsView({
   backLabel = "Back home",
   extraActions,
   signUpRedirectUrl = "/survey",
+  titleOverride,
 }: {
   result: EngineResult;
   fullResults: boolean;
@@ -288,6 +290,7 @@ export function ResultsView({
   backLabel?: string;
   extraActions?: ReactNode;
   signUpRedirectUrl?: string;
+  titleOverride?: ReactNode;
 }) {
   if (result.gate === "UNDER_18_BLOCK") {
     return (
@@ -346,6 +349,7 @@ export function ResultsView({
       reasons={reasons}
       fullResults={fullResults}
       signUpRedirectUrl={signUpRedirectUrl}
+      titleOverride={titleOverride}
     />
   );
 }
@@ -362,6 +366,7 @@ function ResultsViewInner({
   reasons,
   fullResults,
   signUpRedirectUrl,
+  titleOverride,
 }: {
   result: EngineResult;
   onRestart?: () => void;
@@ -374,8 +379,10 @@ function ResultsViewInner({
   reasons: Partial<Record<Ingredient, string[]>>;
   fullResults: boolean;
   signUpRedirectUrl: string;
+  titleOverride?: ReactNode;
 }) {
   const [selected, setSelected] = useState<Ingredient | null>(null);
+  const productsForSelected = selected ? getProductsForIngredient(selected) : [];
 
   function pillButton(ing: Ingredient, variant: "essential" | "other" | "covered") {
     const styles = {
@@ -430,9 +437,11 @@ function ResultsViewInner({
             ? "Drug-tested athlete: showing NSF Certified for Sport options only"
             : "Full catalog"}
         </p>
-        <h1 className="mb-2 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-          Your supplement stack
-        </h1>
+        {titleOverride ?? (
+          <h1 className="mb-2 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            Your supplement stack
+          </h1>
+        )}
         <p className="mb-8 text-sm text-muted">
           {fullResults
             ? "Tap any supplement to see what it is, how it works, and why it's in your stack."
@@ -641,6 +650,37 @@ function ResultsViewInner({
                   <p>Included as part of your recommended stack.</p>
                 )}
               </div>
+              {productsForSelected.length > 0 && (
+                <div>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-2">
+                    Shop this (affiliate links)
+                  </p>
+                  <div className="flex flex-col gap-2">
+                    {productsForSelected.map((product) => (
+                      <a
+                        key={product.id}
+                        href={product.affiliateUrl}
+                        target="_blank"
+                        rel="noopener sponsored"
+                        className="flex items-center gap-3 rounded-xl border border-white/10 bg-surface-2 p-3 transition-colors hover:border-white/25"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element -- per-product Amazon SiteStripe image URLs can't be pre-registered as next/image remote patterns */}
+                        <img
+                          src={product.imageUrl}
+                          alt={product.name}
+                          className="h-12 w-12 shrink-0 object-contain"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-foreground">
+                            {product.name}
+                          </p>
+                          <p className="text-xs font-semibold text-accent">Shop on Amazon →</p>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

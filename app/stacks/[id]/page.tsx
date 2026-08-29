@@ -2,7 +2,8 @@ import Link from "next/link";
 import { buildStack } from "@/lib/engine";
 import { getSavedStacks } from "@/lib/savedStacks";
 import { ResultsView } from "@/components/ResultsView";
-import { deleteSavedStackAction } from "../actions";
+import { StackNameHeader } from "@/components/StackNameHeader";
+import { deleteSavedStackAction, renameSavedStackAction } from "../actions";
 
 export default async function StackDetailPage({
   params,
@@ -42,6 +43,13 @@ export default async function StackDetailPage({
       fullResults
       backHref="/stacks"
       backLabel="Back to my stacks"
+      titleOverride={
+        <StackNameHeader
+          id={saved.id}
+          initialName={saved.name}
+          onRename={renameSavedStackAction}
+        />
+      }
       extraActions={
         <form action={deleteSavedStackAction.bind(null, saved.id)}>
           <button

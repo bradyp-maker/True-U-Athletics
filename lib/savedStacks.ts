@@ -76,6 +76,34 @@ export async function saveStack(answers: Answers, customName?: string): Promise<
   return { ok: true, stack: newStack };
 }
 
+export type RenameStackResult =
+  | { ok: true }
+  | { ok: false; reason: "signed_out" | "not_found" | "invalid_name" };
+
+/** Renames a saved stack by id for the signed-in user. */
+export async function renameSavedStack(id: string, name: string): Promise<RenameStackResult> {
+  const trimmed = name.trim();
+  if (!trimmed) return { ok: false, reason: "invalid_name" };
+
+  const { userId } = await auth();
+  if (!userId) return { ok: false, reason: "signed_out" };
+
+  const client = await clerkClient();
+  const user = await client.users.getUser(userId);
+  const existing = readSavedStacks(user.privateMetadata);
+  const index = existing.findIndex((s) => s.id === id);
+  if (index === -1) return { ok: false, reason: "not_found" };
+
+  const updated = [...existing];
+  updated[index] = { ...updated[index], name: trimmed };
+
+  await client.users.updateUserMetadata(userId, {
+    privateMetadata: { ...user.privateMetadata, savedStacks: updated },
+  });
+
+  return { ok: true };
+}
+
 /** Deletes a saved stack by id for the signed-in user. No-op if not found or signed out. */
 export async function deleteSavedStack(id: string): Promise<void> {
   const { userId } = await auth();
