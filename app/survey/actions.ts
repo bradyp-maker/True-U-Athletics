@@ -64,6 +64,9 @@ export async function generateStackAction(
   };
 }
 
-export async function saveStackAction(answers: Answers): Promise<SaveStackResult> {
-  return saveStack(answers);
+export async function saveStackAction(
+  answers: Answers,
+  name?: string
+): Promise<SaveStackResult> {
+  return saveStack(answers, name);
 }

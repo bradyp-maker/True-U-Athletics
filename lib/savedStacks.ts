@@ -36,8 +36,8 @@ export type SaveStackResult =
   | { ok: true; stack: SavedStack }
   | { ok: false; reason: "signed_out" | "limit_reached" };
 
-/** Saves a stack for the signed-in user, named after their training goal(s). */
-export async function saveStack(answers: Answers): Promise<SaveStackResult> {
+/** Saves a stack for the signed-in user. Uses their chosen name, falling back to one generated from their training goal(s). */
+export async function saveStack(answers: Answers, customName?: string): Promise<SaveStackResult> {
   const entitlement = await getEntitlement();
   if (entitlement.tier === "anonymous") {
     return { ok: false, reason: "signed_out" };
@@ -52,7 +52,8 @@ export async function saveStack(answers: Answers): Promise<SaveStackResult> {
     return { ok: false, reason: "limit_reached" };
   }
 
-  const baseName = nameStackFromGoals(answers.q2_goals);
+  const trimmedCustomName = customName?.trim();
+  const baseName = trimmedCustomName || nameStackFromGoals(answers.q2_goals);
   const existingNames = new Set(existing.map((s) => s.name));
   let name = baseName;
   let suffix = 2;

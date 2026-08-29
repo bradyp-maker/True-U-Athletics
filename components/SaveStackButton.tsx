@@ -5,19 +5,22 @@ import Link from "next/link";
 import type { SaveStackResult } from "@/lib/savedStacks";
 
 export function SaveStackButton({
+  defaultName,
   onSave,
 }: {
-  onSave: () => Promise<SaveStackResult>;
+  defaultName: string;
+  onSave: (name: string) => Promise<SaveStackResult>;
 }) {
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "limit_reached" | "error">(
     "idle"
   );
+  const [name, setName] = useState(defaultName);
   const [savedName, setSavedName] = useState<string | null>(null);
 
   async function handleSave() {
     setStatus("saving");
     try {
-      const result = await onSave();
+      const result = await onSave(name);
       if (result.ok) {
         setSavedName(result.stack.name);
         setStatus("saved");
@@ -55,20 +58,30 @@ export function SaveStackButton({
   }
 
   return (
-    <div>
-      <button
-        type="button"
-        onClick={handleSave}
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <input
+        value={name}
+        onChange={(event) => setName(event.target.value)}
+        placeholder={defaultName}
+        maxLength={60}
         disabled={status === "saving"}
-        className="flex h-11 items-center justify-center rounded-full border border-white/15 px-6 text-sm font-bold text-foreground transition-colors hover:border-white/30 hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {status === "saving" ? "Saving…" : "Save this stack"}
-      </button>
-      {status === "error" && (
-        <p className="mt-2 text-xs text-caution">
-          Something went wrong saving your stack. Please try again.
-        </p>
-      )}
+        className="h-11 flex-1 rounded-full border border-white/10 bg-surface px-5 text-sm text-foreground placeholder:text-muted-2 focus:border-accent/50 disabled:opacity-60 sm:max-w-xs"
+      />
+      <div>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={status === "saving" || !name.trim()}
+          className="flex h-11 items-center justify-center rounded-full border border-white/15 px-6 text-sm font-bold text-foreground transition-colors hover:border-white/30 hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {status === "saving" ? "Saving…" : "Save this stack"}
+        </button>
+        {status === "error" && (
+          <p className="mt-2 text-xs text-caution">
+            Something went wrong saving your stack. Please try again.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

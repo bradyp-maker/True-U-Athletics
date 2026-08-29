@@ -50,7 +50,7 @@ export const LABELS: Record<string, string> = {
   high: "High",
   // shared / q11 / ingredients
   none: "None",
-  protein: "Protein",
+  protein: "Protein Powder (whey)",
   protein_plant: "Plant protein",
   creatine: "Creatine",
   caffeine: "Caffeine",

@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { MULTI_SELECT, SINGLE_SELECT, type Answers, type EngineResult } from "@/lib/engine";
+import {
+  MULTI_SELECT,
+  SINGLE_SELECT,
+  nameStackFromGoals,
+  type Answers,
+  type EngineResult,
+} from "@/lib/engine";
 import { optionLabel } from "@/lib/labels";
 import { generateStackAction, saveStackAction } from "./actions";
 import { SurveyGate } from "@/components/SurveyGate";
@@ -254,7 +260,8 @@ export default function SurveyClient() {
         extraActions={
           fullResults ? (
             <SaveStackButton
-              onSave={() => saveStackAction(answers as Answers)}
+              defaultName={nameStackFromGoals((answers as Answers).q2_goals)}
+              onSave={(name) => saveStackAction(answers as Answers, name)}
             />
           ) : undefined
         }

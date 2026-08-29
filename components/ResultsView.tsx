@@ -33,7 +33,13 @@ const INGREDIENT_INFO: Record<
     whatItDoes: "Boosts alertness, focus, and power output during training.",
   },
   protein: {
-    whatItIs: "A whey-based protein powder, a fast-digesting complete protein from milk.",
+    whatItIs:
+      "A whey-based protein powder, a fast-digesting complete protein from milk. It's sold in a " +
+      "few forms: whey concentrate (standard, some carbs/fat), whey isolate (leaner, less lactose, " +
+      "better if you're cutting or dairy-sensitive), or a \"mass gainer\" blend (whey plus added " +
+      "carbs, for a calorie surplus if you're struggling to eat enough to bulk). The amino acid " +
+      "profile that builds muscle is essentially the same across all three — pick the one that fits " +
+      "your calorie goal.",
     howItWorks: "Supplies essential amino acids that trigger muscle protein synthesis.",
     whatItDoes: "Helps repair and build muscle tissue after training.",
   },
