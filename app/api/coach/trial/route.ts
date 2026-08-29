@@ -1,5 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getCoachTrialStatus, recordCoachTrialMessage } from "@/lib/coachTrial";
+import { getSavedStacks } from "@/lib/savedStacks";
+import { buildStackContext } from "@/lib/coachContext";
 
 const SYSTEM_PROMPT = `You are Coach, the AI coaching assistant for True U Athletics — a supplement
 recommendation platform founded by Brady Palen, a former USC/Wichita State high jumper.
@@ -58,6 +60,9 @@ export async function POST(request: Request) {
 
   await recordCoachTrialMessage();
 
+  const savedStacks = await getSavedStacks();
+  const systemPrompt = `${SYSTEM_PROMPT}\n\n${buildStackContext(savedStacks)}`;
+
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream<Uint8Array>({
@@ -66,7 +71,7 @@ export async function POST(request: Request) {
         const claudeStream = anthropic.messages.stream({
           model: "claude-opus-5",
           max_tokens: 1024,
-          system: SYSTEM_PROMPT,
+          system: systemPrompt,
           messages,
         });
 
