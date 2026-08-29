@@ -1,8 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { getEntitlement } from "@/lib/entitlements";
 
-const anthropic = new Anthropic();
-
 const SYSTEM_PROMPT = `You are Coach, the AI coaching assistant built into True U Athletics — a supplement
 recommendation platform founded by Brady Palen, a former USC/Wichita State high jumper.
 
@@ -35,29 +33,37 @@ export async function POST(request: Request) {
     return new Response("Missing messages.", { status: 400 });
   }
 
+  let anthropic: Anthropic;
+  try {
+    anthropic = new Anthropic();
+  } catch (error) {
+    console.error("Coach: failed to construct Anthropic client", {
+      message: error instanceof Error ? error.message : error,
+    });
+    return Response.json({ error: "Coach is temporarily unavailable." }, { status: 500 });
+  }
+
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const claudeStream = anthropic.messages.stream({
-        model: "claude-opus-5",
-        max_tokens: 8192,
-        system: SYSTEM_PROMPT,
-        messages,
-      });
-
-      claudeStream.on("text", (delta) => {
-        controller.enqueue(encoder.encode(delta));
-      });
-
-      claudeStream.on("error", (err) => {
-        controller.error(err);
-      });
-
       try {
+        const claudeStream = anthropic.messages.stream({
+          model: "claude-opus-5",
+          max_tokens: 8192,
+          system: SYSTEM_PROMPT,
+          messages,
+        });
+
+        claudeStream.on("text", (delta) => {
+          controller.enqueue(encoder.encode(delta));
+        });
+
+        claudeStream.on("error", (err) => logCoachError(err));
+
         await claudeStream.finalMessage();
-      } catch {
-        // error already surfaced via the "error" listener above
+      } catch (error) {
+        logCoachError(error);
       } finally {
         controller.close();
       }
@@ -66,5 +72,14 @@ export async function POST(request: Request) {
 
   return new Response(stream, {
     headers: { "Content-Type": "text/plain; charset=utf-8" },
+  });
+}
+
+function logCoachError(error: unknown) {
+  const anthropicError = error as { status?: number; message?: string; error?: unknown };
+  console.error("Coach error:", {
+    status: anthropicError?.status,
+    message: anthropicError?.message,
+    body: anthropicError?.error,
   });
 }
