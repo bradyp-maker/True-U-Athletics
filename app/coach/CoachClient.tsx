@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { parseCoachMessage } from "@/lib/parseCoachMessage";
 import type { ScheduleData } from "@/lib/parseCoachMessage";
 import { ScheduleCard, ScheduleLoadingCard } from "@/components/ScheduleCard";
@@ -16,15 +16,50 @@ const STARTER_PROMPTS = [
 export default function CoachClient({
   manageBillingAction,
   addScheduleToCalendarAction,
+  userId,
 }: {
   manageBillingAction: () => Promise<void>;
   addScheduleToCalendarAction: (schedule: ScheduleData) => Promise<{ ok: boolean }>;
+  userId: string;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const storageKey = `coach_messages_${userId}`;
+
+  // Restore chat history from this browser on mount, so navigating away and
+  // back (or reloading) doesn't wipe the conversation. This has to happen in
+  // an effect, not a lazy useState initializer: the server has no access to
+  // localStorage, so reading it during the initial render would make the
+  // client's first render disagree with the server-rendered HTML.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw) as ChatMessage[];
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- see comment above
+        if (Array.isArray(parsed)) setMessages(parsed);
+      }
+    } catch {
+      // ignore corrupt/unavailable storage
+    }
+    setHydrated(true);
+  }, [storageKey]);
+
+  // Persist on every change, but only after the initial restore above has
+  // run — otherwise this fires first (with the empty initial state) and
+  // wipes out history before it's had a chance to load.
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(messages));
+    } catch {
+      // ignore unavailable storage (e.g. private browsing quota)
+    }
+  }, [messages, hydrated, storageKey]);
 
   async function sendMessage(text: string) {
     const trimmed = text.trim();

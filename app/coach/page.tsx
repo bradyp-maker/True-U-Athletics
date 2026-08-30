@@ -14,6 +14,7 @@ export default async function CoachPage() {
     <CoachClient
       manageBillingAction={createBillingPortalSessionAction}
       addScheduleToCalendarAction={addScheduleToCalendarAction}
+      userId={entitlement.userId}
     />
   );
 }

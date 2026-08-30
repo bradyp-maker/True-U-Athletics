@@ -1,6 +1,6 @@
 import "server-only";
 import { auth } from "@clerk/nextjs/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { getSupabaseAdmin } from "@/lib/supabase";
 import type { ScheduleData } from "@/lib/parseCoachMessage";
 
 export type SupplementCheck = { name: string; taken: boolean };
@@ -28,6 +28,22 @@ function rowToEntry(row: Row): CalendarEntry {
   };
 }
 
+function logSupabaseError(context: string, error: unknown) {
+  console.error(`${context}: Supabase error`, {
+    message: error instanceof Error ? error.message : error,
+  });
+}
+
+/** Gets the Supabase client, logging (not throwing) if it can't be constructed. */
+function tryGetSupabase(context: string) {
+  try {
+    return getSupabaseAdmin();
+  } catch (error) {
+    logSupabaseError(context, error);
+    return null;
+  }
+}
+
 /** Fetches saved calendar entries for the signed-in user within a date range (inclusive). */
 export async function getCalendarEntries(
   startDate: string,
@@ -36,7 +52,10 @@ export async function getCalendarEntries(
   const { userId } = await auth();
   if (!userId) return [];
 
-  const { data, error } = await supabaseAdmin
+  const supabase = tryGetSupabase("getCalendarEntries");
+  if (!supabase) return [];
+
+  const { data, error } = await supabase
     .from("calendar_entries")
     .select("entry_date, training, supplements, source")
     .eq("user_id", userId)
@@ -45,7 +64,7 @@ export async function getCalendarEntries(
     .order("entry_date", { ascending: true });
 
   if (error) {
-    console.error("getCalendarEntries error:", error.message);
+    logSupabaseError("getCalendarEntries", error);
     return [];
   }
 
@@ -61,14 +80,17 @@ export async function upsertCalendarEntry(
   const { userId } = await auth();
   if (!userId) return { ok: false, reason: "signed_out" };
 
-  const { data: existing } = await supabaseAdmin
+  const supabase = tryGetSupabase("upsertCalendarEntry");
+  if (!supabase) return { ok: false, reason: "error" };
+
+  const { data: existing } = await supabase
     .from("calendar_entries")
     .select("training, supplements")
     .eq("user_id", userId)
     .eq("entry_date", date)
     .maybeSingle();
 
-  const { error } = await supabaseAdmin.from("calendar_entries").upsert(
+  const { error } = await supabase.from("calendar_entries").upsert(
     {
       user_id: userId,
       entry_date: date,
@@ -82,7 +104,7 @@ export async function upsertCalendarEntry(
   );
 
   if (error) {
-    console.error("upsertCalendarEntry error:", error.message);
+    logSupabaseError("upsertCalendarEntry", error);
     return { ok: false, reason: "error" };
   }
   return { ok: true };
@@ -97,7 +119,10 @@ export async function setSupplementTaken(
   const { userId } = await auth();
   if (!userId) return { ok: false, reason: "signed_out" };
 
-  const { data: existing } = await supabaseAdmin
+  const supabase = tryGetSupabase("setSupplementTaken");
+  if (!supabase) return { ok: false, reason: "error" };
+
+  const { data: existing } = await supabase
     .from("calendar_entries")
     .select("supplements")
     .eq("user_id", userId)
@@ -107,7 +132,7 @@ export async function setSupplementTaken(
   const current: SupplementCheck[] = existing?.supplements ?? [];
   const updated = current.map((s) => (s.name === supplementName ? { ...s, taken } : s));
 
-  const { error } = await supabaseAdmin.from("calendar_entries").upsert(
+  const { error } = await supabase.from("calendar_entries").upsert(
     {
       user_id: userId,
       entry_date: date,
@@ -118,7 +143,7 @@ export async function setSupplementTaken(
   );
 
   if (error) {
-    console.error("setSupplementTaken error:", error.message);
+    logSupabaseError("setSupplementTaken", error);
     return { ok: false, reason: "error" };
   }
   return { ok: true };
@@ -129,11 +154,10 @@ export async function deleteCalendarEntry(date: string): Promise<void> {
   const { userId } = await auth();
   if (!userId) return;
 
-  await supabaseAdmin
-    .from("calendar_entries")
-    .delete()
-    .eq("user_id", userId)
-    .eq("entry_date", date);
+  const supabase = tryGetSupabase("deleteCalendarEntry");
+  if (!supabase) return;
+
+  await supabase.from("calendar_entries").delete().eq("user_id", userId).eq("entry_date", date);
 }
 
 const DAY_INDEX: Record<string, number> = {
@@ -172,6 +196,9 @@ export async function insertScheduleFromCoach(
   const { userId } = await auth();
   if (!userId) return { ok: false, reason: "signed_out" };
 
+  const supabase = tryGetSupabase("insertScheduleFromCoach");
+  if (!supabase) return { ok: false, reason: "error" };
+
   const weekStart = mondayOfCurrentWeek();
 
   const rows = schedule.days
@@ -191,12 +218,12 @@ export async function insertScheduleFromCoach(
 
   if (rows.length === 0) return { ok: false, reason: "error" };
 
-  const { error } = await supabaseAdmin
+  const { error } = await supabase
     .from("calendar_entries")
     .upsert(rows, { onConflict: "user_id,entry_date" });
 
   if (error) {
-    console.error("insertScheduleFromCoach error:", error.message);
+    logSupabaseError("insertScheduleFromCoach", error);
     return { ok: false, reason: "error" };
   }
   return { ok: true };
