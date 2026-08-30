@@ -9,6 +9,7 @@ import {
   addSupplementAction,
   removeSupplementAction,
   clearDayAction,
+  loadStackIntoDayAction,
 } from "./actions";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -24,18 +25,21 @@ function formatDate(isoDate: string): string {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-function isToday(isoDate: string): boolean {
-  return isoDate === new Date().toISOString().slice(0, 10);
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
 type DayState = { training: string; supplements: SupplementCheck[] };
+type StackOption = { id: string; name: string; supplements: string[] };
 
 export function CalendarClient({
   weekStart,
   entries,
+  stackOptions,
 }: {
   weekStart: string;
   entries: CalendarEntry[];
+  stackOptions: StackOption[];
 }) {
   const dates = DAY_LABELS.map((_, i) => addDays(weekStart, i));
 
@@ -48,6 +52,9 @@ export function CalendarClient({
     return initial;
   });
   const [newSupplementInput, setNewSupplementInput] = useState<Record<string, string>>({});
+  const [expandedDate, setExpandedDate] = useState<string | null>(
+    dates.includes(todayIso()) ? todayIso() : null
+  );
 
   function updateDay(date: string, patch: Partial<DayState>) {
     setDays((prev) => ({ ...prev, [date]: { ...prev[date], ...patch } }));
@@ -84,6 +91,17 @@ export function CalendarClient({
     void clearDayAction(date);
   }
 
+  function handleLoadStack(date: string, stack: StackOption) {
+    const current = days[date].supplements;
+    const existingNames = new Set(current.map((s) => s.name));
+    const additions = stack.supplements
+      .filter((name) => !existingNames.has(name))
+      .map((name) => ({ name, taken: false }));
+    if (additions.length === 0) return;
+    updateDay(date, { supplements: [...current, ...additions] });
+    void loadStackIntoDayAction(date, stack.supplements, current);
+  }
+
   const prevWeek = addDays(weekStart, -7);
   const nextWeek = addDays(weekStart, 7);
   const weekEnd = addDays(weekStart, 6);
@@ -91,7 +109,7 @@ export function CalendarClient({
 
   return (
     <div className="flex flex-1 flex-col bg-background px-6 py-16 sm:py-24">
-      <div className="mx-auto w-full max-w-3xl">
+      <div className="mx-auto w-full max-w-4xl">
         <span className="w-fit rounded-full border border-white/10 bg-surface px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-accent">
           Calendar
         </span>
@@ -115,24 +133,69 @@ export function CalendarClient({
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col gap-4">
+        <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
           {dates.map((date, index) => {
             const day = days[date];
+            const isExpanded = expandedDate === date;
             const hasContent = day.training.trim().length > 0 || day.supplements.length > 0;
+            const takenCount = day.supplements.filter((s) => s.taken).length;
+            const isToday = date === todayIso();
+
+            if (!isExpanded) {
+              return (
+                <button
+                  key={date}
+                  type="button"
+                  onClick={() => setExpandedDate(date)}
+                  className={`flex flex-col items-start gap-1.5 rounded-xl border p-3 text-left transition-colors ${
+                    isToday
+                      ? "border-accent/40 bg-accent-soft"
+                      : "border-white/10 bg-surface hover:border-white/25"
+                  }`}
+                >
+                  <div className="flex w-full items-baseline justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-accent">
+                      {DAY_LABELS[index]}
+                    </span>
+                    <span className="text-[11px] text-muted-2">{formatDate(date)}</span>
+                  </div>
+                  {hasContent ? (
+                    <>
+                      <p className="line-clamp-2 text-xs text-foreground">
+                        {day.training || "Training logged"}
+                      </p>
+                      {day.supplements.length > 0 && (
+                        <span className="text-[11px] text-muted">
+                          {takenCount}/{day.supplements.length} taken
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-xs text-muted-2">No entry</p>
+                  )}
+                </button>
+              );
+            }
+
             return (
               <div
                 key={date}
-                className={`rounded-2xl border p-5 ${
-                  isToday(date) ? "border-accent/40 bg-accent-soft" : "border-white/10 bg-surface"
+                className={`col-span-2 rounded-2xl border p-5 sm:col-span-4 lg:col-span-7 ${
+                  isToday ? "border-accent/40 bg-accent-soft" : "border-white/10 bg-surface"
                 }`}
               >
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-baseline gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedDate(null)}
+                    className="flex items-baseline gap-2"
+                  >
                     <span className="text-xs font-semibold uppercase tracking-wide text-accent">
                       {DAY_LABELS[index]}
                     </span>
                     <span className="text-xs text-muted-2">{formatDate(date)}</span>
-                  </div>
+                    <span className="text-xs text-muted-2">(collapse ▲)</span>
+                  </button>
                   {hasContent && (
                     <button
                       type="button"
@@ -208,6 +271,24 @@ export function CalendarClient({
                     Add
                   </button>
                 </div>
+
+                {stackOptions.length > 0 && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span className="text-[11px] uppercase tracking-wide text-muted-2">
+                      Load from stack:
+                    </span>
+                    {stackOptions.map((stack) => (
+                      <button
+                        key={stack.id}
+                        type="button"
+                        onClick={() => handleLoadStack(date, stack)}
+                        className="flex h-7 items-center justify-center rounded-full border border-white/15 px-3 text-xs font-medium text-muted transition-colors hover:border-accent/40 hover:text-foreground"
+                      >
+                        + {stack.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}

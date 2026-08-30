@@ -1,6 +1,9 @@
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import { getEntitlement } from "@/lib/entitlements";
 import { getCalendarEntries } from "@/lib/calendarEntries";
+import { getSavedStacks } from "@/lib/savedStacks";
+import { buildStack } from "@/lib/engine";
+import { optionLabel } from "@/lib/labels";
 import { CalendarClient } from "./CalendarClient";
 
 function mondayOf(dateStr: string): string {
@@ -67,6 +70,15 @@ export default async function CalendarPage({
   const weekEnd = addDays(weekStart, 6);
 
   const entries = await getCalendarEntries(weekStart, weekEnd);
+  const savedStacks = await getSavedStacks();
+  const stackOptions = savedStacks.map((stack) => {
+    const result = buildStack(stack.answers);
+    return {
+      id: stack.id,
+      name: stack.name,
+      supplements: [...(result.toRecommend ?? [])].map(optionLabel),
+    };
+  });
 
-  return <CalendarClient weekStart={weekStart} entries={entries} />;
+  return <CalendarClient weekStart={weekStart} entries={entries} stackOptions={stackOptions} />;
 }

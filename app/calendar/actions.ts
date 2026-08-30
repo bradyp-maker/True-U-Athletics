@@ -48,3 +48,19 @@ export async function clearDayAction(date: string) {
   await deleteCalendarEntry(date);
   revalidatePath("/calendar");
 }
+
+/** Appends a saved stack's supplements to a day, skipping any already present by name. */
+export async function loadStackIntoDayAction(
+  date: string,
+  names: string[],
+  currentSupplements: SupplementCheck[]
+) {
+  const existingNames = new Set(currentSupplements.map((s) => s.name));
+  const additions = names
+    .filter((name) => !existingNames.has(name))
+    .map((name) => ({ name, taken: false }));
+  const updated = [...currentSupplements, ...additions];
+  const result = await upsertCalendarEntry(date, { supplements: updated });
+  revalidatePath("/calendar");
+  return result;
+}
