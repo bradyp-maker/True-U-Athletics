@@ -10,7 +10,7 @@ type ChatMessage = { role: "user" | "assistant"; content: string };
 const STARTER_PROMPTS = [
   "When should I take creatine relative to my workout?",
   "Is it safe to stack caffeine with my pre-workout?",
-  "What should I take on rest days vs training days?",
+  "Build me a supplement schedule based on my training and stack",
 ];
 
 export default function CoachClient({
