@@ -6,6 +6,13 @@ import { buildStack } from "@/lib/engine";
 import { optionLabel } from "@/lib/labels";
 import { CalendarClient } from "./CalendarClient";
 
+// This page reads live per-user Clerk + Supabase data on every request (saved
+// stacks, calendar entries, and writes from "Add to Calendar" on the Coach
+// page). Without this, Next.js can cache a stale snapshot of the page, so a
+// freshly-added schedule silently fails to show up until the cache expires.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 function mondayOf(dateStr: string): string {
   const date = new Date(`${dateStr}T00:00:00`);
   const weekday = date.getDay(); // 0 = Sun ... 6 = Sat
@@ -69,8 +76,10 @@ export default async function CalendarPage({
   const weekStart = mondayOf(week ?? today);
   const weekEnd = addDays(weekStart, 6);
 
-  const entries = await getCalendarEntries(weekStart, weekEnd);
-  const savedStacks = await getSavedStacks();
+  const [entries, savedStacks] = await Promise.all([
+    getCalendarEntries(weekStart, weekEnd),
+    getSavedStacks(),
+  ]);
   const stackOptions = savedStacks.map((stack) => {
     const result = buildStack(stack.answers);
     return {

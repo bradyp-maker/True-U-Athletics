@@ -9,6 +9,13 @@ import {
   toggleExcludedIngredientAction,
 } from "../actions";
 
+// Reads live per-user Clerk metadata (this stack's answers, name, and
+// excluded ingredients) that changes via Server Actions on this same route.
+// Without this, edits can silently fail to show up until Next.js's cache
+// expires.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function StackDetailPage({
   params,
 }: {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { ScheduleData } from "@/lib/parseCoachMessage";
 
 export function ScheduleCard({
@@ -27,16 +28,24 @@ export function ScheduleCard({
     <div className="w-full overflow-hidden rounded-2xl border border-accent/20 bg-surface-2">
       <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-accent-soft px-4 py-3">
         <p className="font-display text-sm font-bold text-foreground">{data.title}</p>
-        {onAddToCalendar && (
-          <button
-            type="button"
-            onClick={handleAdd}
-            disabled={status === "saving" || status === "added"}
-            className="flex h-7 shrink-0 items-center justify-center rounded-full bg-accent px-3 text-xs font-bold text-accent-foreground transition-all duration-200 hover:scale-[1.04] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100"
-          >
-            {status === "saving" ? "Adding…" : status === "added" ? "Added ✓" : "Add to Calendar"}
-          </button>
-        )}
+        {onAddToCalendar &&
+          (status === "added" ? (
+            <Link
+              href="/calendar"
+              className="flex h-7 shrink-0 items-center justify-center rounded-full bg-accent px-3 text-xs font-bold text-accent-foreground transition-all duration-200 hover:scale-[1.04]"
+            >
+              See Calendar →
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={handleAdd}
+              disabled={status === "saving"}
+              className="flex h-7 shrink-0 items-center justify-center rounded-full bg-accent px-3 text-xs font-bold text-accent-foreground transition-all duration-200 hover:scale-[1.04] disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100"
+            >
+              {status === "saving" ? "Adding…" : "Add to Calendar"}
+            </button>
+          ))}
       </div>
       <div className="divide-y divide-white/5">
         {data.days.map((day, index) => (

@@ -4,6 +4,12 @@ import { getEntitlement } from "@/lib/entitlements";
 import { getSavedStacks, savedStackLimitFor } from "@/lib/savedStacks";
 import { deleteSavedStackAction } from "./actions";
 
+// Reads live per-user Clerk metadata (saved stacks) that changes via Server
+// Actions on this same route (rename, exclude ingredient, delete). Without
+// this, edits can silently fail to show up until Next.js's cache expires.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function StacksPage() {
   const entitlement = await getEntitlement();
 
