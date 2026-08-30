@@ -3,7 +3,11 @@ import { buildStack } from "@/lib/engine";
 import { getSavedStacks } from "@/lib/savedStacks";
 import { ResultsView } from "@/components/ResultsView";
 import { StackNameHeader } from "@/components/StackNameHeader";
-import { deleteSavedStackAction, renameSavedStackAction } from "../actions";
+import {
+  deleteSavedStackAction,
+  renameSavedStackAction,
+  toggleExcludedIngredientAction,
+} from "../actions";
 
 export default async function StackDetailPage({
   params,
@@ -43,6 +47,9 @@ export default async function StackDetailPage({
       fullResults
       backHref="/stacks"
       backLabel="Back to my stacks"
+      editable
+      initialExcludedIngredients={saved.excludedIngredients ?? []}
+      onToggleExclude={toggleExcludedIngredientAction.bind(null, saved.id)}
       titleOverride={
         <StackNameHeader
           id={saved.id}

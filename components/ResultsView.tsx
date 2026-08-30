@@ -282,6 +282,10 @@ export function ResultsView({
   extraActions,
   signUpRedirectUrl = "/survey",
   titleOverride,
+  editable = false,
+  initialExcludedIngredients = [],
+  onToggleExclude,
+  onExcludedChange,
 }: {
   result: EngineResult;
   fullResults: boolean;
@@ -291,7 +295,26 @@ export function ResultsView({
   extraActions?: ReactNode;
   signUpRedirectUrl?: string;
   titleOverride?: ReactNode;
+  editable?: boolean;
+  initialExcludedIngredients?: Ingredient[];
+  onToggleExclude?: (ingredient: Ingredient, excluded: boolean) => unknown;
+  onExcludedChange?: (excluded: Ingredient[]) => void;
 }) {
+  const [excluded, setExcluded] = useState<Ingredient[]>(initialExcludedIngredients);
+
+  function handleToggleExclude(ingredient: Ingredient, isExcluded: boolean) {
+    setExcluded((prev) => {
+      const next = isExcluded
+        ? prev.includes(ingredient)
+          ? prev
+          : [...prev, ingredient]
+        : prev.filter((i) => i !== ingredient);
+      onExcludedChange?.(next);
+      return next;
+    });
+    void onToggleExclude?.(ingredient, isExcluded);
+  }
+
   if (result.gate === "UNDER_18_BLOCK") {
     return (
       <div className="flex flex-1 flex-col items-center justify-center bg-background px-6 py-16 text-center">
@@ -326,8 +349,8 @@ export function ResultsView({
     );
   }
 
-  const toRecommend = [...(result.toRecommend ?? [])];
-  const alreadyCovered = [...(result.alreadyCovered ?? [])];
+  const toRecommend = [...(result.toRecommend ?? [])].filter((i) => !excluded.includes(i));
+  const alreadyCovered = [...(result.alreadyCovered ?? [])].filter((i) => !excluded.includes(i));
   const reasons = result.reasons;
 
   const rankedToRecommend = [...toRecommend].sort(
@@ -350,6 +373,9 @@ export function ResultsView({
       fullResults={fullResults}
       signUpRedirectUrl={signUpRedirectUrl}
       titleOverride={titleOverride}
+      editable={editable}
+      excluded={excluded}
+      onToggleExclude={handleToggleExclude}
     />
   );
 }
@@ -367,6 +393,9 @@ function ResultsViewInner({
   fullResults,
   signUpRedirectUrl,
   titleOverride,
+  editable,
+  excluded,
+  onToggleExclude,
 }: {
   result: EngineResult;
   onRestart?: () => void;
@@ -380,6 +409,9 @@ function ResultsViewInner({
   fullResults: boolean;
   signUpRedirectUrl: string;
   titleOverride?: ReactNode;
+  editable: boolean;
+  excluded: Ingredient[];
+  onToggleExclude: (ingredient: Ingredient, excluded: boolean) => void;
 }) {
   const [selected, setSelected] = useState<Ingredient | null>(null);
   const productsForSelected = selected ? getProductsForIngredient(selected) : [];
@@ -387,46 +419,68 @@ function ResultsViewInner({
   function pillButton(ing: Ingredient, variant: "essential" | "other" | "covered") {
     const styles = {
       essential:
-        "border-accent bg-accent text-accent-foreground shadow-[0_0_20px_-6px_rgba(198,255,63,0.5)] hover:scale-[1.04]",
-      other:
-        "border-white/10 bg-surface text-foreground hover:border-white/25 hover:bg-surface-2 hover:scale-[1.04]",
-      covered:
-        "border-dashed border-white/15 text-muted hover:border-white/30 hover:scale-[1.04]",
+        "border-accent bg-accent text-accent-foreground shadow-[0_0_20px_-6px_rgba(198,255,63,0.5)]",
+      other: "border-white/10 bg-surface text-foreground hover:border-white/25 hover:bg-surface-2",
+      covered: "border-dashed border-white/15 text-muted hover:border-white/30",
     }[variant];
     return (
       <li key={ing}>
-        <button
-          type="button"
-          onClick={() => setSelected(ing)}
-          className={`flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-150 ${styles}`}
+        <div
+          className={`flex items-center gap-1 rounded-full border py-1.5 pl-4 text-sm font-medium transition-all duration-150 ${
+            editable ? "pr-1.5" : "pr-4"
+          } ${styles}`}
         >
-          {optionLabel(ing)}
-          {(variant === "essential" || variant === "other") && (
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-3.5 w-3.5 opacity-60"
-              aria-hidden="true"
+          <button
+            type="button"
+            onClick={() => setSelected(ing)}
+            className="flex items-center gap-1.5 hover:scale-[1.04]"
+          >
+            {optionLabel(ing)}
+            {(variant === "essential" || variant === "other") && (
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-3.5 w-3.5 opacity-60"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="9" />
+                <line x1="12" y1="11" x2="12" y2="16" />
+                <circle cx="12" cy="8" r="0.5" fill="currentColor" stroke="none" />
+              </svg>
+            )}
+          </button>
+          {editable && (
+            <button
+              type="button"
+              onClick={() => onToggleExclude(ing, true)}
+              aria-label={`Remove ${optionLabel(ing)} from your stack`}
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs opacity-60 transition-opacity hover:bg-black/10 hover:opacity-100"
             >
-              <circle cx="12" cy="12" r="9" />
-              <line x1="12" y1="11" x2="12" y2="16" />
-              <circle cx="12" cy="8" r="0.5" fill="currentColor" stroke="none" />
-            </svg>
+              ✕
+            </button>
           )}
-        </button>
+        </div>
       </li>
     );
   }
 
   const relevantSynergies = SYNERGIES.filter(
-    (s) => result.stack.has(s.pair[0]) && result.stack.has(s.pair[1])
+    (s) =>
+      result.stack.has(s.pair[0]) &&
+      result.stack.has(s.pair[1]) &&
+      !excluded.includes(s.pair[0]) &&
+      !excluded.includes(s.pair[1])
   );
   const relevantCautions = CAUTIONS.filter(
-    (c) => result.stack.has(c.pair[0]) && result.stack.has(c.pair[1])
+    (c) =>
+      result.stack.has(c.pair[0]) &&
+      result.stack.has(c.pair[1]) &&
+      !excluded.includes(c.pair[0]) &&
+      !excluded.includes(c.pair[1])
   );
 
   return (
@@ -503,6 +557,27 @@ function ResultsViewInner({
             </h2>
             <ul className="flex flex-wrap gap-2">
               {alreadyCovered.map((ing) => pillButton(ing, "covered"))}
+            </ul>
+          </section>
+        )}
+
+        {editable && excluded.length > 0 && (
+          <section className="mb-8">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-2">
+              Removed from your stack
+            </h2>
+            <ul className="flex flex-wrap gap-2">
+              {excluded.map((ing) => (
+                <li key={ing}>
+                  <button
+                    type="button"
+                    onClick={() => onToggleExclude(ing, false)}
+                    className="flex items-center gap-1.5 rounded-full border border-dashed border-white/15 px-4 py-1.5 text-sm font-medium text-muted-2 transition-colors hover:border-accent/40 hover:text-foreground"
+                  >
+                    + {optionLabel(ing)}
+                  </button>
+                </li>
+              ))}
             </ul>
           </section>
         )}

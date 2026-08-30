@@ -7,6 +7,7 @@ import {
   nameStackFromGoals,
   type Answers,
   type EngineResult,
+  type Ingredient,
 } from "@/lib/engine";
 import { optionLabel } from "@/lib/labels";
 import { generateStackAction, saveStackAction } from "./actions";
@@ -145,6 +146,7 @@ export default function SurveyClient() {
   const [gate, setGate] = useState<GateReason | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [otherMenuOpen, setOtherMenuOpen] = useState(false);
+  const [excludedIngredients, setExcludedIngredients] = useState<Ingredient[]>([]);
 
   const question = QUESTIONS[step];
   const isLastStep = step === QUESTIONS.length - 1;
@@ -196,6 +198,7 @@ export default function SurveyClient() {
       }
       setFullResults(response.fullResults);
       setResult(response.result);
+      setExcludedIngredients([]);
     } finally {
       setIsSubmitting(false);
     }
@@ -245,6 +248,7 @@ export default function SurveyClient() {
     setStep(0);
     setResult(null);
     setGate(null);
+    setExcludedIngredients([]);
   }
 
   if (gate) {
@@ -257,11 +261,15 @@ export default function SurveyClient() {
         result={result}
         onRestart={handleRestart}
         fullResults={fullResults}
+        editable={fullResults}
+        onExcludedChange={setExcludedIngredients}
         extraActions={
           fullResults ? (
             <SaveStackButton
               defaultName={nameStackFromGoals((answers as Answers).q2_goals)}
-              onSave={(name) => saveStackAction(answers as Answers, name)}
+              onSave={(name) =>
+                saveStackAction(answers as Answers, name, excludedIngredients)
+              }
             />
           ) : undefined
         }

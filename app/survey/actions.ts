@@ -1,6 +1,6 @@
 "use server";
 
-import { buildStack, type Answers, type EngineResult } from "@/lib/engine";
+import { buildStack, type Answers, type EngineResult, type Ingredient } from "@/lib/engine";
 import {
   canGenerate,
   getEntitlement,
@@ -66,7 +66,8 @@ export async function generateStackAction(
 
 export async function saveStackAction(
   answers: Answers,
-  name?: string
+  name?: string,
+  excludedIngredients?: Ingredient[]
 ): Promise<SaveStackResult> {
-  return saveStack(answers, name);
+  return saveStack(answers, name, excludedIngredients);
 }

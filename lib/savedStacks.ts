@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID } from "crypto";
 import { auth, clerkClient } from "@clerk/nextjs/server";
-import { nameStackFromGoals, type Answers } from "@/lib/engine";
+import { nameStackFromGoals, type Answers, type Ingredient } from "@/lib/engine";
 import { getEntitlement } from "@/lib/entitlements";
 
 export const FREE_SAVED_STACK_LIMIT = 1;
@@ -12,6 +12,7 @@ export type SavedStack = {
   name: string;
   createdAt: string;
   answers: Answers;
+  excludedIngredients?: Ingredient[];
 };
 
 function readSavedStacks(privateMetadata: unknown): SavedStack[] {
@@ -37,7 +38,11 @@ export type SaveStackResult =
   | { ok: false; reason: "signed_out" | "limit_reached" };
 
 /** Saves a stack for the signed-in user. Uses their chosen name, falling back to one generated from their training goal(s). */
-export async function saveStack(answers: Answers, customName?: string): Promise<SaveStackResult> {
+export async function saveStack(
+  answers: Answers,
+  customName?: string,
+  excludedIngredients: Ingredient[] = []
+): Promise<SaveStackResult> {
   const entitlement = await getEntitlement();
   if (entitlement.tier === "anonymous") {
     return { ok: false, reason: "signed_out" };
@@ -67,6 +72,7 @@ export async function saveStack(answers: Answers, customName?: string): Promise<
     name,
     createdAt: new Date().toISOString(),
     answers,
+    excludedIngredients,
   };
 
   await client.users.updateUserMetadata(entitlement.userId, {
@@ -96,6 +102,43 @@ export async function renameSavedStack(id: string, name: string): Promise<Rename
 
   const updated = [...existing];
   updated[index] = { ...updated[index], name: trimmed };
+
+  await client.users.updateUserMetadata(userId, {
+    privateMetadata: { ...user.privateMetadata, savedStacks: updated },
+  });
+
+  return { ok: true };
+}
+
+export type ToggleExcludedResult =
+  | { ok: true }
+  | { ok: false; reason: "signed_out" | "not_found" };
+
+/** Adds or removes an ingredient from a saved stack's exclusion list (i.e. hides/restores it from that stack's results). */
+export async function toggleExcludedIngredient(
+  id: string,
+  ingredient: Ingredient,
+  excludedNow: boolean
+): Promise<ToggleExcludedResult> {
+  const { userId } = await auth();
+  if (!userId) return { ok: false, reason: "signed_out" };
+
+  const client = await clerkClient();
+  const user = await client.users.getUser(userId);
+  const existing = readSavedStacks(user.privateMetadata);
+  const index = existing.findIndex((s) => s.id === id);
+  if (index === -1) return { ok: false, reason: "not_found" };
+
+  const stack = existing[index];
+  const current = stack.excludedIngredients ?? [];
+  const nextExcluded = excludedNow
+    ? current.includes(ingredient)
+      ? current
+      : [...current, ingredient]
+    : current.filter((i) => i !== ingredient);
+
+  const updated = [...existing];
+  updated[index] = { ...stack, excludedIngredients: nextExcluded };
 
   await client.users.updateUserMetadata(userId, {
     privateMetadata: { ...user.privateMetadata, savedStacks: updated },
