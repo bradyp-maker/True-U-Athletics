@@ -12,6 +12,7 @@ import { CalendarClient } from "./CalendarClient";
 // freshly-added schedule silently fails to show up until the cache expires.
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+export const maxDuration = 30;
 
 function mondayOf(dateStr: string): string {
   const date = new Date(`${dateStr}T00:00:00`);
