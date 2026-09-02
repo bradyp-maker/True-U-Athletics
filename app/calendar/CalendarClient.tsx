@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { CalendarEntry, SupplementCheck } from "@/lib/calendarEntries";
 import {
@@ -10,6 +11,7 @@ import {
   removeSupplementAction,
   clearDayAction,
   loadStackIntoDayAction,
+  importWorkoutPdfAction,
 } from "./actions";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -36,11 +38,17 @@ export function CalendarClient({
   weekStart,
   entries,
   stackOptions,
+  isPaid,
 }: {
   weekStart: string;
   entries: CalendarEntry[];
   stackOptions: StackOption[];
+  isPaid: boolean;
 }) {
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "error">("idle");
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const dates = DAY_LABELS.map((_, i) => addDays(weekStart, i));
 
   const [days, setDays] = useState<Record<string, DayState>>(() => {
@@ -102,6 +110,38 @@ export function CalendarClient({
     void loadStackIntoDayAction(date, stack.supplements, current);
   }
 
+  async function handleFileSelected(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = ""; // allow re-selecting the same file later
+    if (!file) return;
+
+    if (file.type !== "application/pdf") {
+      setUploadStatus("error");
+      setUploadError("Please upload a PDF file.");
+      return;
+    }
+
+    setUploadStatus("uploading");
+    setUploadError(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const result = await importWorkoutPdfAction(weekStart, formData);
+      if (result.ok) {
+        setUploadStatus("idle");
+        router.refresh();
+      } else {
+        setUploadStatus("error");
+        setUploadError(result.reason);
+      }
+    } catch {
+      setUploadStatus("error");
+      setUploadError("Something went wrong reading that PDF. Please try again.");
+    }
+  }
+
   const prevWeek = addDays(weekStart, -7);
   const nextWeek = addDays(weekStart, 7);
   const weekEnd = addDays(weekStart, 6);
@@ -131,6 +171,41 @@ export function CalendarClient({
               Next →
             </Link>
           </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          {isPaid ? (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/pdf"
+                onChange={handleFileSelected}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadStatus === "uploading"}
+                className="flex h-9 items-center justify-center rounded-full border border-white/15 px-4 text-sm font-medium text-muted transition-colors hover:border-white/30 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {uploadStatus === "uploading"
+                  ? "Reading PDF…"
+                  : `Upload workout PDF (${formatDate(weekStart)} – ${formatDate(addDays(weekStart, 6))})`}
+              </button>
+              {uploadStatus === "error" && uploadError && (
+                <span className="text-xs text-caution">{uploadError}</span>
+              )}
+            </>
+          ) : (
+            <span className="text-xs text-muted-2">
+              Upload a workout PDF to auto-fill this week —{" "}
+              <Link href="/coach" className="text-accent hover:underline">
+                available on MVP
+              </Link>
+              .
+            </span>
+          )}
         </div>
 
         <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">

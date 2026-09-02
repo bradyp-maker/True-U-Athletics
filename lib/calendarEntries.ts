@@ -186,20 +186,20 @@ function addDays(isoDate: string, days: number): string {
 }
 
 /**
- * Inserts a Coach-generated weekly schedule into the calendar, mapping each
- * "Mon"/"Tue"/etc entry onto the actual date for the current week. Existing
- * entries for those dates are overwritten.
+ * Inserts an AI-generated weekly schedule (from Coach chat or a PDF import)
+ * into the calendar, mapping each "Mon"/"Tue"/etc entry onto the actual date
+ * for the given week (defaults to the current week). Existing entries for
+ * those dates are overwritten.
  */
 export async function insertScheduleFromCoach(
-  schedule: ScheduleData
+  schedule: ScheduleData,
+  weekStart: string = mondayOfCurrentWeek()
 ): Promise<{ ok: true } | { ok: false; reason: "signed_out" | "error" }> {
   const { userId } = await auth();
   if (!userId) return { ok: false, reason: "signed_out" };
 
   const supabase = tryGetSupabase("insertScheduleFromCoach");
   if (!supabase) return { ok: false, reason: "error" };
-
-  const weekStart = mondayOfCurrentWeek();
 
   const rows = schedule.days
     .map((day) => {

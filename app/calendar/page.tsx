@@ -90,5 +90,12 @@ export default async function CalendarPage({
     };
   });
 
-  return <CalendarClient weekStart={weekStart} entries={entries} stackOptions={stackOptions} />;
+  return (
+    <CalendarClient
+      weekStart={weekStart}
+      entries={entries}
+      stackOptions={stackOptions}
+      isPaid={entitlement.tier === "paid"}
+    />
+  );
 }
